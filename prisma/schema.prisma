@@ -19,6 +19,10 @@ model User {
   password  String
   name      String
   role      Role      @default(CUSTOMER)
+  status    UserStatus @default(ACTIVE)
+  lastLogin DateTime?
+  phone     String?
+  avatar    String?
   orders    Order[]
   bookings  Booking[]
   createdAt DateTime  @default(now())
@@ -26,16 +30,16 @@ model User {
 }
 
 model MenuItem {
-  id          String        @id @default(uuid())
+  id          String      @id @default(uuid())
   name        String
   description String?
-  price       Decimal       @db.Decimal(10, 2)
+  price       Decimal     @db.Decimal(10, 2)
   category    String
   image       String?
-  isAvailable Boolean       @default(true)
+  isAvailable Boolean     @default(true)
   orderItems  OrderItem[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
 
 model Order {
@@ -63,7 +67,7 @@ model OrderItem {
 
 model Booking {
   id        String        @id @default(uuid())
-  user      User          @relation(fields: [userId], references: [id])
+  user      User         @relation(fields: [userId], references: [id])
   userId    String
   date      DateTime
   time      DateTime
@@ -72,6 +76,47 @@ model Booking {
   notes     String?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Restaurant {
+  id            String          @id @default(uuid())
+  name          String
+  rating        Float          @default(0)
+  totalReviews  Int           @default(0)
+  licenseNumber String?
+  licenseType   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  operatingHours OperatingHours[]
+  promotions     Promotion[]
+}
+
+model OperatingHours {
+  id           String     @id @default(uuid())
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  restaurantId String
+  days         String
+  hours        String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model Promotion {
+  id                 String     @id @default(uuid())
+  restaurant         Restaurant @relation(fields: [restaurantId], references: [id])
+  restaurantId       String
+  discountPercentage Int
+  minimumOrder       Decimal    @db.Decimal(10, 2)
+  description        String
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 }
 
 enum Role {
@@ -93,4 +138,9 @@ enum BookingStatus {
   PENDING
   CONFIRMED
   CANCELLED
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
 }

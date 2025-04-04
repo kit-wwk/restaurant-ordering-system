@@ -22,11 +22,12 @@ import LockOpenIcon from "@mui/icons-material/LockOpen";
 
 interface User {
   id: string;
-  username: string;
+  name: string;
   email: string;
-  role: "admin" | "staff" | "user";
-  status: "active" | "inactive";
-  lastLogin: string;
+  role: string;
+  phone: string | null;
+  avatar: string | null;
+  createdAt: string;
 }
 
 export default function UsersPage() {
@@ -49,27 +50,27 @@ export default function UsersPage() {
     }
   };
 
-  const handleStatusChange = async (userId: string, newStatus: string) => {
+  const handleRoleChange = async (userId: string, newRole: string) => {
     try {
       const response = await fetch(`/api/admin/users/${userId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ id: userId, role: newRole }),
       });
 
       if (response.ok) {
         fetchUsers();
       }
     } catch (error) {
-      console.error("Error updating user status:", error);
+      console.error("Error updating user role:", error);
     }
   };
 
   const filteredUsers = users.filter(
     (user) =>
-      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -95,33 +96,35 @@ export default function UsersPage() {
               <TableCell>用戶名稱</TableCell>
               <TableCell>電郵</TableCell>
               <TableCell>角色</TableCell>
-              <TableCell>狀態</TableCell>
-              <TableCell>最後登入</TableCell>
+              <TableCell>電話</TableCell>
+              <TableCell>建立日期</TableCell>
               <TableCell>操作</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {filteredUsers.map((user) => (
               <TableRow key={user.id}>
-                <TableCell>{user.username}</TableCell>
+                <TableCell>{user.name}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{user.role}</TableCell>
-                <TableCell>{user.status}</TableCell>
-                <TableCell>{user.lastLogin}</TableCell>
+                <TableCell>{user.phone || "-"}</TableCell>
+                <TableCell>
+                  {new Date(user.createdAt).toLocaleDateString("zh-HK")}
+                </TableCell>
                 <TableCell>
                   <IconButton color="primary">
                     <EditIcon />
                   </IconButton>
                   <IconButton
-                    color={user.status === "active" ? "error" : "success"}
+                    color={user.role === "ADMIN" ? "error" : "success"}
                     onClick={() =>
-                      handleStatusChange(
+                      handleRoleChange(
                         user.id,
-                        user.status === "active" ? "inactive" : "active"
+                        user.role === "ADMIN" ? "CUSTOMER" : "ADMIN"
                       )
                     }
                   >
-                    {user.status === "active" ? <LockIcon /> : <LockOpenIcon />}
+                    {user.role === "ADMIN" ? <LockIcon /> : <LockOpenIcon />}
                   </IconButton>
                   <IconButton color="error">
                     <DeleteIcon />

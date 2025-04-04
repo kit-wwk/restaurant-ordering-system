@@ -1,78 +1,80 @@
 import { NextResponse } from "next/server";
-import type { MenuItem, Category } from "@/types/restaurant";
-
-// Mock data - in a real app, this would be in a database
-export const mockMenu: Category[] = [
-  {
-    id: "cat1",
-    name: "日式料理",
-    items: [
-      {
-        id: "item1",
-        name: "刺身拼盤",
-        description: "新鮮三文魚、吞拿魚、帶子刺身",
-        price: 188,
-        image: "/images/sashimi.jpg",
-        category: "日式料理",
-        isAvailable: true,
-      },
-      {
-        id: "item2",
-        name: "天婦羅拼盤",
-        description: "炸蝦、蔬菜天婦羅",
-        price: 128,
-        image: "/images/tempura.jpg",
-        category: "日式料理",
-        isAvailable: true,
-      },
-    ],
-  },
-  {
-    id: "cat2",
-    name: "亞洲美食",
-    items: [
-      {
-        id: "item3",
-        name: "韓式炸雞",
-        description: "香脆韓式炸雞配特製醬料",
-        price: 98,
-        image: "/images/korean-chicken.jpg",
-        category: "亞洲美食",
-        isAvailable: true,
-      },
-    ],
-  },
-];
+import { prisma } from "@/lib/prisma";
+import type { Category } from "@/types/restaurant";
 
 // GET /api/admin/menu - Get all menu items
 export async function GET() {
-  return NextResponse.json(mockMenu);
+  try {
+    const menuItems = await prisma.menuItem.findMany({
+      orderBy: {
+        category: "asc",
+      },
+    });
+
+    // Group menu items by category
+    type MenuItem = (typeof menuItems)[number];
+    const categories = menuItems.reduce((acc: Category[], item: MenuItem) => {
+      const category = acc.find((c: Category) => c.name === item.category);
+      if (category) {
+        category.items.push({
+          id: item.id,
+          name: item.name,
+          description: item.description || "",
+          price: Number(item.price),
+          image: item.image || "",
+          category: item.category,
+          isAvailable: item.isAvailable,
+        });
+      } else {
+        acc.push({
+          id: `cat-${acc.length + 1}`,
+          name: item.category,
+          items: [
+            {
+              id: item.id,
+              name: item.name,
+              description: item.description || "",
+              price: Number(item.price),
+              image: item.image || "",
+              category: item.category,
+              isAvailable: item.isAvailable,
+            },
+          ],
+        });
+      }
+      return acc;
+    }, []);
+
+    return NextResponse.json(categories);
+  } catch (error) {
+    console.error("Error fetching menu:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch menu" },
+      { status: 500 }
+    );
+  }
 }
 
 // POST /api/admin/menu - Create new menu item
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { categoryId, item } = body;
+    const { item } = body;
 
-    const category = mockMenu.find((c) => c.id === categoryId);
-    if (!category) {
-      return NextResponse.json(
-        { error: "Category not found" },
-        { status: 404 }
-      );
-    }
+    const newItem = await prisma.menuItem.create({
+      data: {
+        name: item.name,
+        description: item.description,
+        price: item.price,
+        category: item.category,
+        image: item.image,
+        isAvailable: true,
+      },
+    });
 
-    const newItem: MenuItem = {
-      id: `item${Date.now()}`,
-      ...item,
-      category: category.name,
-      isAvailable: true,
-    };
-
-    category.items.push(newItem);
     return NextResponse.json(newItem);
   } catch (error) {
+    console.error("Error creating menu item:", error);
     return NextResponse.json(
       { error: "Failed to create menu item" },
       { status: 500 }
@@ -84,24 +86,25 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { categoryId, item } = body;
+    const { item } = body;
 
-    const category = mockMenu.find((c) => c.id === categoryId);
-    if (!category) {
-      return NextResponse.json(
-        { error: "Category not found" },
-        { status: 404 }
-      );
-    }
+    const updatedItem = await prisma.menuItem.update({
+      where: {
+        id: item.id,
+      },
+      data: {
+        name: item.name,
+        description: item.description,
+        price: item.price,
+        category: item.category,
+        image: item.image,
+        isAvailable: item.isAvailable,
+      },
+    });
 
-    const itemIndex = category.items.findIndex((i) => i.id === item.id);
-    if (itemIndex === -1) {
-      return NextResponse.json({ error: "Item not found" }, { status: 404 });
-    }
-
-    category.items[itemIndex] = { ...category.items[itemIndex], ...item };
-    return NextResponse.json(category.items[itemIndex]);
+    return NextResponse.json(updatedItem);
   } catch (error) {
+    console.error("Error updating menu item:", error);
     return NextResponse.json(
       { error: "Failed to update menu item" },
       { status: 500 }
@@ -113,27 +116,21 @@ export async function PUT(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const categoryId = searchParams.get("categoryId");
     const itemId = searchParams.get("itemId");
 
-    if (!categoryId || !itemId) {
-      return NextResponse.json(
-        { error: "Missing categoryId or itemId" },
-        { status: 400 }
-      );
+    if (!itemId) {
+      return NextResponse.json({ error: "Missing itemId" }, { status: 400 });
     }
 
-    const category = mockMenu.find((c) => c.id === categoryId);
-    if (!category) {
-      return NextResponse.json(
-        { error: "Category not found" },
-        { status: 404 }
-      );
-    }
+    await prisma.menuItem.delete({
+      where: {
+        id: itemId,
+      },
+    });
 
-    category.items = category.items.filter((item) => item.id !== itemId);
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error("Error deleting menu item:", error);
     return NextResponse.json(
       { error: "Failed to delete menu item" },
       { status: 500 }

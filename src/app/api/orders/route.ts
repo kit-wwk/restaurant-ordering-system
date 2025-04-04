@@ -1,49 +1,118 @@
 import { NextResponse } from "next/server";
-import type { CartItem } from "@/contexts/CartContext";
+import { prisma } from "@/lib/prisma";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
-interface OrderRequest {
-  items: CartItem[];
-  subtotal: number;
-  total: number;
+// GET /api/orders - Get all orders (admin)
+export async function GET() {
+  try {
+    const orders = await prisma.order.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        items: {
+          include: {
+            menuItem: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return NextResponse.json(orders);
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch orders" },
+      { status: 500 }
+    );
+  }
 }
 
-// In a real application, this would be stored in a database
-const orders: OrderRequest[] = [];
-
+// POST /api/orders - Create new order
 export async function POST(request: Request) {
   try {
-    const order: OrderRequest = await request.json();
+    const body = await request.json();
+    const { userId, items } = body;
 
-    // Validate order
-    if (!order.items || order.items.length === 0) {
+    if (!userId || !items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
-        { error: "Order must contain at least one item" },
+        { error: "Invalid request body. userId and items array are required." },
         { status: 400 }
       );
     }
 
-    // In a real application, you would:
-    // 1. Validate the prices and recalculate totals
-    // 2. Check item availability
-    // 3. Create a transaction in the database
-    // 4. Process payment
-    // 5. Update inventory
-    // 6. Send confirmation emails
+    // Validate each item
+    for (const item of items) {
+      if (!item.menuItemId || !item.quantity || !item.price) {
+        return NextResponse.json(
+          { error: "Each item must have menuItemId, quantity, and price." },
+          { status: 400 }
+        );
+      }
+    }
 
-    // For now, we'll just store the order in memory
-    orders.push(order);
-
-    // Simulate processing time
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    return NextResponse.json(
-      { message: "Order placed successfully", orderId: Date.now().toString() },
-      { status: 201 }
+    // Calculate total price
+    let total = 0;
+    const orderItems = items.map(
+      (item: { menuItemId: string; quantity: number; price: number }) => {
+        const itemTotal = item.quantity * item.price;
+        total += itemTotal;
+        return {
+          menuItemId: item.menuItemId,
+          quantity: item.quantity,
+          price: item.price,
+        };
+      }
     );
+
+    const order = await prisma.order.create({
+      data: {
+        userId,
+        total,
+        status: "pending", // Set initial status
+        items: {
+          create: orderItems,
+        },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        items: {
+          include: {
+            menuItem: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(order, { status: 201 });
   } catch (error) {
-    console.error("Error processing order:", error);
+    console.error("Error creating order:", error);
+    if (error instanceof PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        return NextResponse.json({ error: "Duplicate order" }, { status: 409 });
+      }
+      if (error.code === "P2003") {
+        return NextResponse.json(
+          { error: "Referenced user or menu item not found" },
+          { status: 404 }
+        );
+      }
+    }
     return NextResponse.json(
-      { error: "Failed to process order" },
+      { error: "Failed to create order" },
       { status: 500 }
     );
   }

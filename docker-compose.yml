@@ -1,29 +1,14 @@
 version: "3.8"
-
 services:
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    volumes:
-      - .:/app
-      - /app/node_modules
-    environment:
-      - NODE_ENV=development
-      - DATABASE_URL=mysql://user:password@db:3306/restaurant_db
-    depends_on:
-      - db
-
-  db:
+  mysql:
     image: mysql:8.0
+    container_name: restaurant_mysql
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: restaurant_db
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
+      MYSQL_USER: restaurant_user
+      MYSQL_PASSWORD: restaurant_password
     ports:
       - "3306:3306"
     volumes:

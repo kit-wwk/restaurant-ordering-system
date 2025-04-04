@@ -1,93 +1,122 @@
 import { NextResponse } from "next/server";
-import type { TableBooking } from "@/types/user";
+import { prisma } from "@/lib/prisma";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
-// Mock bookings data - in a real app, this would be in a database
-const mockBookings: TableBooking[] = [
-  {
-    id: "1",
-    userId: "1",
-    date: "2024-03-25",
-    time: "19:00",
-    numberOfPeople: 4,
-    status: "confirmed",
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-  },
-  {
-    id: "2",
-    userId: "1",
-    date: "2024-03-26",
-    time: "18:30",
-    numberOfPeople: 2,
-    status: "pending",
-    createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(), // 12 hours ago
-  },
-  {
-    id: "3",
-    userId: "1",
-    date: "2024-03-24",
-    time: "20:00",
-    numberOfPeople: 6,
-    status: "cancelled",
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-  },
-  {
-    id: "4",
-    userId: "1",
-    date: "2024-03-27",
-    time: "19:30",
-    numberOfPeople: 3,
-    status: "confirmed",
-    createdAt: new Date().toISOString(), // Just now
-  },
-];
-
+// GET /api/bookings - Get all bookings (admin)
 export async function GET() {
   try {
-    // In a real app, you would:
-    // 1. Validate the user's session/token
-    // 2. Query the database for the user's bookings
+    const bookings = await prisma.booking.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+      orderBy: {
+        date: "asc",
+      },
+    });
 
-    // Simulate network latency
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    return NextResponse.json({ bookings: mockBookings });
+    return NextResponse.json(bookings);
   } catch (error) {
+    console.error("Error fetching bookings:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Failed to fetch bookings" },
       { status: 500 }
     );
   }
 }
 
+// POST /api/bookings - Create new booking
 export async function POST(request: Request) {
   try {
-    const { date, time, numberOfPeople } = await request.json();
+    const body = await request.json();
+    const { userId, date, time, guests, notes } = body;
 
-    // In a real app, you would:
-    // 1. Validate the user's session/token
-    // 2. Validate the booking data
-    // 3. Check table availability
-    // 4. Create the booking in the database
+    // Validate required fields
+    if (!userId || !date || !time || !guests) {
+      return NextResponse.json(
+        {
+          error:
+            "Missing required fields: userId, date, time, and guests are required",
+        },
+        { status: 400 }
+      );
+    }
 
-    const newBooking: TableBooking = {
-      id: (mockBookings.length + 1).toString(),
-      userId: "1", // In a real app, this would come from the authenticated user
-      date,
-      time,
-      numberOfPeople,
-      status: "confirmed",
-      createdAt: new Date().toISOString(),
-    };
+    // Validate guests number
+    if (guests < 1 || guests > 20) {
+      return NextResponse.json(
+        { error: "Number of guests must be between 1 and 20" },
+        { status: 400 }
+      );
+    }
 
-    mockBookings.push(newBooking);
+    // Convert date and time strings to Date objects
+    const bookingDate = new Date(date);
+    const bookingTime = new Date(time);
 
-    // Simulate network latency
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // Validate date is not in the past
+    if (bookingDate < new Date()) {
+      return NextResponse.json(
+        { error: "Booking date cannot be in the past" },
+        { status: 400 }
+      );
+    }
 
-    return NextResponse.json({ booking: newBooking });
+    // Check for existing bookings at the same time
+    const existingBooking = await prisma.booking.findFirst({
+      where: {
+        date: bookingDate,
+        time: bookingTime,
+      },
+    });
+
+    if (existingBooking) {
+      return NextResponse.json(
+        { error: "This time slot is already booked" },
+        { status: 409 }
+      );
+    }
+
+    const booking = await prisma.booking.create({
+      data: {
+        userId,
+        date: bookingDate,
+        time: bookingTime,
+        guests,
+        notes,
+        status: "pending", // Set initial status
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(booking, { status: 201 });
   } catch (error) {
+    console.error("Error creating booking:", error);
+    if (error instanceof PrismaClientKnownRequestError) {
+      if (error.code === "P2003") {
+        return NextResponse.json(
+          { error: "Referenced user not found" },
+          { status: 404 }
+        );
+      }
+    }
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Failed to create booking" },
       { status: 500 }
     );
   }

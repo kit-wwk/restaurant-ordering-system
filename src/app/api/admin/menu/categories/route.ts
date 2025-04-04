@@ -1,23 +1,39 @@
 import { NextResponse } from "next/server";
-import type { Category } from "@/types/restaurant";
+import { prisma } from "@/lib/prisma";
 
-// Import the mock menu data from the parent menu API
-import { mockMenu } from "../route";
+// GET /api/admin/menu/categories - Get all categories
+export async function GET() {
+  try {
+    const categories = await prisma.category.findMany({
+      orderBy: {
+        name: "asc",
+      },
+    });
+
+    return NextResponse.json(categories);
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch categories" },
+      { status: 500 }
+    );
+  }
+}
 
 // POST /api/admin/menu/categories - Create new category
 export async function POST(request: Request) {
   try {
     const { name } = await request.json();
 
-    const newCategory: Category = {
-      id: `cat${Date.now()}`,
-      name,
-      items: [],
-    };
+    const newCategory = await prisma.category.create({
+      data: {
+        name,
+      },
+    });
 
-    mockMenu.push(newCategory);
     return NextResponse.json(newCategory);
   } catch (error) {
+    console.error("Error creating category:", error);
     return NextResponse.json(
       { error: "Failed to create category" },
       { status: 500 }
@@ -30,17 +46,18 @@ export async function PUT(request: Request) {
   try {
     const { id, name } = await request.json();
 
-    const category = mockMenu.find((c) => c.id === id);
-    if (!category) {
-      return NextResponse.json(
-        { error: "Category not found" },
-        { status: 404 }
-      );
-    }
+    const updatedCategory = await prisma.category.update({
+      where: {
+        id,
+      },
+      data: {
+        name,
+      },
+    });
 
-    category.name = name;
-    return NextResponse.json(category);
+    return NextResponse.json(updatedCategory);
   } catch (error) {
+    console.error("Error updating category:", error);
     return NextResponse.json(
       { error: "Failed to update category" },
       { status: 500 }
@@ -61,17 +78,26 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const index = mockMenu.findIndex((c) => c.id === id);
-    if (index === -1) {
-      return NextResponse.json(
-        { error: "Category not found" },
-        { status: 404 }
-      );
-    }
+    // First, update all menu items in this category to a default category
+    await prisma.menuItem.updateMany({
+      where: {
+        category: id,
+      },
+      data: {
+        category: "Uncategorized",
+      },
+    });
 
-    mockMenu.splice(index, 1);
+    // Then delete the category
+    await prisma.category.delete({
+      where: {
+        id,
+      },
+    });
+
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error("Error deleting category:", error);
     return NextResponse.json(
       { error: "Failed to delete category" },
       { status: 500 }

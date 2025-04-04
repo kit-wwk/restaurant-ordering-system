@@ -1,116 +1,93 @@
 import { NextResponse } from "next/server";
-import type { Restaurant } from "@/types/restaurant";
+import { prisma } from "@/lib/prisma";
+import type { Restaurant, Category } from "@/types/restaurant";
 
-// This is mock data - in a real application, this would come from a database
-const mockRestaurant: Restaurant = {
-  id: "1",
-  name: "日式料理餐廳",
-  rating: 4.5,
-  totalReviews: 128,
-  licenseNumber: "R-2024-001",
-  licenseType: "普通食肆",
-  operatingHours: [
-    { days: "星期一至五", hours: "11:00 - 22:00" },
-    { days: "星期六、日", hours: "11:00 - 23:00" },
-  ],
-  promotions: [
-    {
-      id: "promo1",
-      discountPercentage: 10,
-      minimumOrder: 300,
-      description: "訂單滿HK$300即享9折",
-    },
-  ],
-  categories: [
-    {
-      id: "cat1",
-      name: "日式料理",
-      items: [
-        {
-          id: "item1",
-          name: "刺身拼盤",
-          description: "新鮮三文魚、吞拿魚、帶子刺身",
-          price: 188,
-          image: "/images/sashimi.jpg",
-          category: "日式料理",
-          isAvailable: true,
-        },
-        {
-          id: "item2",
-          name: "天婦羅拼盤",
-          description: "炸蝦、蔬菜天婦羅",
-          price: 128,
-          image: "/images/tempura.jpg",
-          category: "日式料理",
-          isAvailable: true,
-        },
-      ],
-    },
-    {
-      id: "cat2",
-      name: "亞洲美食",
-      items: [
-        {
-          id: "item3",
-          name: "韓式炸雞",
-          description: "香脆韓式炸雞配特製醬料",
-          price: 98,
-          image: "/images/korean-chicken.jpg",
-          category: "亞洲美食",
-          isAvailable: true,
-        },
-        {
-          id: "item4",
-          name: "泰式青咖喱雞",
-          description: "香濃青咖喱配雞肉及時令蔬菜",
-          price: 88,
-          image: "/images/green-curry.jpg",
-          category: "亞洲美食",
-          isAvailable: true,
-        },
-      ],
-    },
-    {
-      id: "cat3",
-      name: "麵類",
-      items: [
-        {
-          id: "item5",
-          name: "叉燒拉麵",
-          description: "手工麵條配叉燒及溏心蛋",
-          price: 78,
-          image: "/images/ramen.jpg",
-          category: "麵類",
-          isAvailable: true,
-        },
-        {
-          id: "item6",
-          name: "擔擔麵",
-          description: "四川風味擔擔麵，香辣可口",
-          price: 68,
-          image: "/images/dandan.jpg",
-          category: "麵類",
-          isAvailable: true,
-        },
-      ],
-    },
-  ],
-};
+export async function GET() {
+  try {
+    const restaurant = await prisma.restaurant.findFirst({
+      include: {
+        operatingHours: true,
+        promotions: true,
+      },
+    });
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
-  // In a real application, you would fetch this from a database
-  if (params.id !== "1") {
+    if (!restaurant) {
+      return NextResponse.json(
+        { error: "Restaurant not found" },
+        { status: 404 }
+      );
+    }
+
+    // Get menu items grouped by category
+    const menuItems = await prisma.menuItem.findMany({
+      orderBy: {
+        category: "asc",
+      },
+    });
+
+    // Group menu items by category
+    type MenuItem = (typeof menuItems)[number];
+    type OperatingHour = (typeof restaurant.operatingHours)[number];
+    type Promotion = (typeof restaurant.promotions)[number];
+
+    const categories = menuItems.reduce((acc: Category[], item: MenuItem) => {
+      const category = acc.find((c: Category) => c.name === item.category);
+      if (category) {
+        category.items.push({
+          id: item.id,
+          name: item.name,
+          description: item.description || "",
+          price: Number(item.price),
+          image: item.image || "",
+          category: item.category,
+          isAvailable: item.isAvailable,
+        });
+      } else {
+        acc.push({
+          id: `cat-${acc.length + 1}`,
+          name: item.category,
+          items: [
+            {
+              id: item.id,
+              name: item.name,
+              description: item.description || "",
+              price: Number(item.price),
+              image: item.image || "",
+              category: item.category,
+              isAvailable: item.isAvailable,
+            },
+          ],
+        });
+      }
+      return acc;
+    }, []);
+
+    const response: Restaurant = {
+      id: restaurant.id,
+      name: restaurant.name,
+      rating: restaurant.rating,
+      totalReviews: restaurant.totalReviews,
+      licenseNumber: restaurant.licenseNumber || "",
+      licenseType: restaurant.licenseType || "",
+      operatingHours: restaurant.operatingHours.map((oh: OperatingHour) => ({
+        days: oh.days,
+        hours: oh.hours,
+      })),
+      promotions: restaurant.promotions.map((p: Promotion) => ({
+        id: p.id,
+        discountPercentage: p.discountPercentage,
+        minimumOrder: Number(p.minimumOrder),
+        description: p.description,
+      })),
+      categories,
+    };
+
+    return NextResponse.json(response);
+  } catch (error) {
+    console.error("Error fetching restaurant:", error);
     return NextResponse.json(
-      { error: "Restaurant not found" },
-      { status: 404 }
+      { error: "Failed to fetch restaurant data" },
+      { status: 500 }
     );
   }
-
-  // Simulate network latency
-  await new Promise((resolve) => setTimeout(resolve, 500));
-
-  return NextResponse.json(mockRestaurant);
 }
