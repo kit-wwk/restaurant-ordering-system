@@ -21,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="zh-HK">
+    <html lang="zh-HK" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeRegistry>
           <DatePickerProvider>

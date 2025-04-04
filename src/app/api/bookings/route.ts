@@ -10,7 +10,34 @@ const mockBookings: TableBooking[] = [
     time: "19:00",
     numberOfPeople: 4,
     status: "confirmed",
-    createdAt: new Date().toISOString(),
+    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+  },
+  {
+    id: "2",
+    userId: "1",
+    date: "2024-03-26",
+    time: "18:30",
+    numberOfPeople: 2,
+    status: "pending",
+    createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(), // 12 hours ago
+  },
+  {
+    id: "3",
+    userId: "1",
+    date: "2024-03-24",
+    time: "20:00",
+    numberOfPeople: 6,
+    status: "cancelled",
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+  },
+  {
+    id: "4",
+    userId: "1",
+    date: "2024-03-27",
+    time: "19:30",
+    numberOfPeople: 3,
+    status: "confirmed",
+    createdAt: new Date().toISOString(), // Just now
   },
 ];
 

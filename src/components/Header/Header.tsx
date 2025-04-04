@@ -14,6 +14,7 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  Box,
 } from "@mui/material";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -70,9 +71,19 @@ export default function Header() {
     <AppBar position="sticky">
       <Toolbar>
         <Restaurant sx={{ mr: 2 }} />
-        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-          餐廳點餐系統
-        </Typography>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            cursor: "pointer",
+            flexGrow: 1,
+          }}
+          onClick={() => router.push("/")}
+        >
+          <Typography variant="h6" component="div">
+            餐廳點餐系統
+          </Typography>
+        </Box>
 
         <Button
           color="inherit"
