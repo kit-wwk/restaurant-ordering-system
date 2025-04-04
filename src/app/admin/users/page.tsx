@@ -14,11 +14,15 @@ import {
   IconButton,
   Stack,
   TextField,
+  Button,
+  Alert,
+  Snackbar,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import LockIcon from "@mui/icons-material/Lock";
-import LockOpenIcon from "@mui/icons-material/LockOpen";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import EditUserDialog from "./components/EditUserDialog";
+import AddUserDialog from "./components/AddUserDialog";
 
 interface User {
   id: string;
@@ -26,13 +30,28 @@ interface User {
   email: string;
   role: string;
   phone: string | null;
-  avatar: string | null;
   createdAt: string;
+}
+
+interface NewUser {
+  name: string;
+  email: string;
+  role: string;
+  password: string;
+  phone?: string;
 }
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success" as "success" | "error",
+  });
 
   useEffect(() => {
     fetchUsers();
@@ -47,25 +66,87 @@ export default function UsersPage() {
       }
     } catch (error) {
       console.error("Error fetching users:", error);
+      showSnackbar("Error fetching users", "error");
     }
   };
 
-  const handleRoleChange = async (userId: string, newRole: string) => {
+  const handleEditUser = async (updatedUser: Partial<User>) => {
+    if (!selectedUser) return;
+
     try {
-      const response = await fetch(`/api/admin/users/${userId}`, {
-        method: "PATCH",
+      const response = await fetch(`/api/admin/users/${selectedUser.id}`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ id: userId, role: newRole }),
+        body: JSON.stringify(updatedUser),
       });
 
       if (response.ok) {
         fetchUsers();
+        setIsEditDialogOpen(false);
+        showSnackbar("User updated successfully", "success");
+      } else {
+        const data = await response.json();
+        showSnackbar(data.error || "Error updating user", "error");
       }
     } catch (error) {
-      console.error("Error updating user role:", error);
+      console.error("Error updating user:", error);
+      showSnackbar("Error updating user", "error");
     }
+  };
+
+  const handleAddUser = async (newUser: NewUser) => {
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newUser),
+      });
+
+      if (response.ok) {
+        fetchUsers();
+        setIsAddDialogOpen(false);
+        showSnackbar("User added successfully", "success");
+      } else {
+        const data = await response.json();
+        showSnackbar(data.error || "Error adding user", "error");
+      }
+    } catch (error) {
+      console.error("Error adding user:", error);
+      showSnackbar("Error adding user", "error");
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm("確定要刪除此用戶嗎？")) return;
+
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        fetchUsers();
+        showSnackbar("User deleted successfully", "success");
+      } else {
+        const data = await response.json();
+        showSnackbar(data.error || "Error deleting user", "error");
+      }
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      showSnackbar("Error deleting user", "error");
+    }
+  };
+
+  const showSnackbar = (message: string, severity: "success" | "error") => {
+    setSnackbar({
+      open: true,
+      message,
+      severity,
+    });
   };
 
   const filteredUsers = users.filter(
@@ -87,6 +168,13 @@ export default function UsersPage() {
           onChange={(e) => setSearchTerm(e.target.value)}
           sx={{ width: 300 }}
         />
+        <Button
+          variant="contained"
+          startIcon={<PersonAddIcon />}
+          onClick={() => setIsAddDialogOpen(true)}
+        >
+          新增用戶
+        </Button>
       </Stack>
 
       <TableContainer component={Paper}>
@@ -112,21 +200,19 @@ export default function UsersPage() {
                   {new Date(user.createdAt).toLocaleDateString("zh-HK")}
                 </TableCell>
                 <TableCell>
-                  <IconButton color="primary">
+                  <IconButton
+                    color="primary"
+                    onClick={() => {
+                      setSelectedUser(user);
+                      setIsEditDialogOpen(true);
+                    }}
+                  >
                     <EditIcon />
                   </IconButton>
                   <IconButton
-                    color={user.role === "ADMIN" ? "error" : "success"}
-                    onClick={() =>
-                      handleRoleChange(
-                        user.id,
-                        user.role === "ADMIN" ? "CUSTOMER" : "ADMIN"
-                      )
-                    }
+                    color="error"
+                    onClick={() => handleDeleteUser(user.id)}
                   >
-                    {user.role === "ADMIN" ? <LockIcon /> : <LockOpenIcon />}
-                  </IconButton>
-                  <IconButton color="error">
                     <DeleteIcon />
                   </IconButton>
                 </TableCell>
@@ -135,6 +221,32 @@ export default function UsersPage() {
           </TableBody>
         </Table>
       </TableContainer>
+
+      <EditUserDialog
+        open={isEditDialogOpen}
+        user={selectedUser}
+        onClose={() => {
+          setIsEditDialogOpen(false);
+          setSelectedUser(null);
+        }}
+        onSave={handleEditUser}
+      />
+
+      <AddUserDialog
+        open={isAddDialogOpen}
+        onClose={() => setIsAddDialogOpen(false)}
+        onAdd={handleAddUser}
+      />
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert severity={snackbar.severity} sx={{ width: "100%" }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
