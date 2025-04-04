@@ -1,12 +1,25 @@
-export type UserRole = "user" | "admin";
+export enum UserRole {
+  ADMIN = "ADMIN",
+  STAFF = "STAFF",
+  CUSTOMER = "CUSTOMER",
+}
+
+export enum UserStatus {
+  ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE",
+}
 
 export interface User {
   id: string;
   name: string;
   email: string;
   role: UserRole;
+  status?: UserStatus;
+  lastLogin?: Date;
   avatar?: string;
   phone?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface AuthState {

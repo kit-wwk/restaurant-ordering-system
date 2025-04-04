@@ -42,12 +42,12 @@ export default function AdminLayout({
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!isLoading && (!user || user.role !== "admin")) {
+    if (!isLoading && (!user || user.role !== "ADMIN")) {
       router.push("/");
     }
   }, [user, isLoading, router]);
 
-  if (isLoading || !user || user.role !== "admin") {
+  if (isLoading || !user || user.role !== "ADMIN") {
     return null;
   }
 

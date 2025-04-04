@@ -2,15 +2,14 @@ import { NextResponse } from "next/server";
 
 export async function POST() {
   try {
-    // In a real app, you would:
-    // 1. Clear the session or invalidate the JWT
-    // 2. Clear HTTP-only cookies
-
-    // Simulate network latency
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // In a real production app, you would:
+    // 1. Clear any server-side sessions
+    // 2. Invalidate any JWTs
+    // 3. Clear any HTTP-only cookies
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error("Logout error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

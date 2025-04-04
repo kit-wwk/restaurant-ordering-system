@@ -1,35 +1,29 @@
 import { NextResponse } from "next/server";
-import type { User } from "@/types/user";
-
-// Mock user data - in a real app, this would be in a database
-const mockUsers: User[] = [
-  {
-    id: "1",
-    name: "測試用戶",
-    email: "user@example.com",
-    role: "user",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=user",
-  },
-  {
-    id: "2",
-    name: "管理員",
-    email: "admin@example.com",
-    role: "admin",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=admin",
-  },
-];
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: Request) {
   try {
     const { email, password } = await request.json();
 
-    // In a real app, you would:
-    // 1. Validate the email and password
-    // 2. Hash the password and compare with stored hash
-    // 3. Create a session or JWT
-    // 4. Set secure HTTP-only cookies
+    if (!email || !password) {
+      return NextResponse.json(
+        { error: "Email and password are required" },
+        { status: 400 }
+      );
+    }
 
-    const user = mockUsers.find((u) => u.email === email);
+    // Find user by email
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        avatar: true,
+        phone: true,
+      },
+    });
 
     if (!user) {
       return NextResponse.json(
@@ -38,11 +32,12 @@ export async function POST(request: Request) {
       );
     }
 
-    // Simulate network latency
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // TODO: In production, implement proper password verification
+    // For development, we're allowing any password
 
     return NextResponse.json({ user });
   } catch (error) {
+    console.error("Login error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

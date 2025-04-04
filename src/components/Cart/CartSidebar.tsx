@@ -21,6 +21,7 @@ import { useCart } from "@/contexts/CartContext";
 import { formatPrice } from "@/utils/format";
 import { useState } from "react";
 import { useSnackbar } from "notistack";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface CartSidebarProps {
   open: boolean;
@@ -29,6 +30,7 @@ interface CartSidebarProps {
 
 export default function CartSidebar({ open, onClose }: CartSidebarProps) {
   const { state, dispatch } = useCart();
+  const { state: authState } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
 
@@ -44,33 +46,59 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
   };
 
   const handleSubmitOrder = async () => {
+    if (!authState.user) {
+      enqueueSnackbar("請先登入後再下單", { variant: "error" });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
+
+      // Format items for the API
+      const formattedItems = state.items.map((item) => ({
+        menuItemId: item.id,
+        quantity: item.quantity,
+        price: item.price,
+      }));
+
+      console.log("Submitting order with:", {
+        userId: authState.user.id,
+        itemsCount: formattedItems.length,
+        items: formattedItems,
+      });
+
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          items: state.items,
-          subtotal: state.subtotal,
-          total: state.total,
+          userId: authState.user.id,
+          items: formattedItems,
         }),
       });
 
+      const responseData = await response.json();
+      console.log("Order response:", {
+        status: response.status,
+        data: responseData,
+      });
+
       if (!response.ok) {
-        throw new Error("Failed to submit order");
+        throw new Error(responseData.error || "Failed to submit order");
       }
 
-      await response.json();
       dispatch({ type: "CLEAR_CART" });
       onClose();
-      setIsSubmitting(false);
       enqueueSnackbar("訂單已成功提交！", { variant: "success" });
     } catch (error) {
       console.error("Error submitting order:", error);
+      enqueueSnackbar(
+        error instanceof Error ? error.message : "提交訂單時出錯，請稍後再試。",
+        { variant: "error" }
+      );
+    } finally {
       setIsSubmitting(false);
-      enqueueSnackbar("提交訂單時出錯，請稍後再試。", { variant: "error" });
     }
   };
 

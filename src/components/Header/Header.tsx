@@ -20,6 +20,7 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Restaurant, AdminPanelSettings, Event } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
+import { UserRole } from "@/types/user";
 
 export default function Header() {
   const {
@@ -97,7 +98,7 @@ export default function Header() {
           <>
             {user ? (
               <>
-                {user.role === "admin" && (
+                {user.role === UserRole.ADMIN && (
                   <Button
                     color="inherit"
                     startIcon={<AdminPanelSettings />}

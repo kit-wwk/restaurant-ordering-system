@@ -41,11 +41,27 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { userId, items } = body;
 
+    console.log("Received order request:", {
+      userId,
+      itemsCount: items?.length,
+    });
+
     if (!userId || !items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
         { error: "Invalid request body. userId and items array are required." },
         { status: 400 }
       );
+    }
+
+    // Verify user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (!user) {
+      console.error("User not found:", userId);
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Validate each item
@@ -56,13 +72,27 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
+
+      // Verify menu item exists
+      const menuItem = await prisma.menuItem.findUnique({
+        where: { id: item.menuItemId },
+        select: { id: true },
+      });
+
+      if (!menuItem) {
+        console.error("Menu item not found:", item.menuItemId);
+        return NextResponse.json(
+          { error: `Menu item not found: ${item.menuItemId}` },
+          { status: 404 }
+        );
+      }
     }
 
     // Calculate total price
     let total = 0;
     const orderItems = items.map(
       (item: { menuItemId: string; quantity: number; price: number }) => {
-        const itemTotal = item.quantity * item.price;
+        const itemTotal = Number(item.quantity) * Number(item.price);
         total += itemTotal;
         return {
           menuItemId: item.menuItemId,
@@ -72,11 +102,17 @@ export async function POST(request: Request) {
       }
     );
 
+    console.log("Creating order:", {
+      userId,
+      total,
+      itemsCount: orderItems.length,
+    });
+
     const order = await prisma.order.create({
       data: {
         userId,
         total,
-        status: "pending", // Set initial status
+        status: "PENDING",
         items: {
           create: orderItems,
         },
@@ -97,6 +133,7 @@ export async function POST(request: Request) {
       },
     });
 
+    console.log("Order created successfully:", order.id);
     return NextResponse.json(order, { status: 201 });
   } catch (error) {
     console.error("Error creating order:", error);
