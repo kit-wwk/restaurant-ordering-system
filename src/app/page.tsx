@@ -1,103 +1,207 @@
-import Image from "next/image";
+"use client";
+
+import {
+  Box,
+  Container,
+  Typography,
+  Paper,
+  Rating,
+  Chip,
+  Divider,
+  Alert,
+  Skeleton,
+} from "@mui/material";
+import { AccessTime, Info } from "@mui/icons-material";
+import { useState, useEffect } from "react";
+import type {
+  Restaurant,
+  Category,
+  Promotion,
+  OperatingHours,
+} from "@/types/restaurant";
+import MenuSection from "@/components/MenuSection/MenuSection";
+import MenuSkeleton from "@/components/MenuSection/MenuSkeleton";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<
+    string | undefined
+  >();
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  useEffect(() => {
+    // Fetch restaurant data
+    fetch("/api/restaurant/1")
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Failed to fetch restaurant data");
+        }
+        return res.json();
+      })
+      .then((data) => {
+        setRestaurant(data);
+        setError(null);
+      })
+      .catch((err) => {
+        setError(err.message);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, []);
+
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      </Container>
+    );
+  }
+
+  if (isLoading || !restaurant) {
+    return (
+      <Box>
+        <Container maxWidth="lg" sx={{ py: 4 }}>
+          <Box sx={{ mb: 4 }}>
+            <Skeleton variant="text" width="60%" height={40} />
+            <Skeleton variant="text" width="30%" height={24} />
+          </Box>
+          <MenuSkeleton />
+        </Container>
+      </Box>
+    );
+  }
+
+  // Get all menu items across categories
+  const allItems = restaurant.categories.flatMap((category) => category.items);
+
+  return (
+    <Box>
+      {/* Restaurant Header */}
+      <Paper elevation={0} sx={{ bgcolor: "white", mb: 2 }}>
+        <Container maxWidth="lg">
+          <Box sx={{ py: 4 }}>
+            <Typography variant="h4" component="h1" gutterBottom>
+              {restaurant.name}
+            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+              <Rating value={restaurant.rating} precision={0.1} readOnly />
+              <Typography variant="body2" sx={{ ml: 1 }}>
+                {restaurant.rating}/5 ({restaurant.totalReviews}+ reviews)
+              </Typography>
+            </Box>
+          </Box>
+        </Container>
+      </Paper>
+
+      {/* Promotions */}
+      {restaurant.promotions.length > 0 && (
+        <Container maxWidth="lg" sx={{ mb: 4 }}>
+          <Paper elevation={1} sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Available Promotions
+            </Typography>
+            {restaurant.promotions.map((promo: Promotion) => (
+              <Box key={promo.id} sx={{ mb: 2 }}>
+                <Typography variant="subtitle1" color="primary">
+                  {promo.discountPercentage}% OFF
+                </Typography>
+                <Typography variant="body2">
+                  Minimum order: HK$ {promo.minimumOrder}. {promo.description}
+                </Typography>
+              </Box>
+            ))}
+          </Paper>
+        </Container>
+      )}
+
+      {/* Categories Navigation */}
+      <Container maxWidth="lg">
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 4 }}>
+          <Chip
+            label="All Items"
+            onClick={() => setSelectedCategory(undefined)}
+            sx={{
+              px: 2,
+              bgcolor: !selectedCategory ? "primary.main" : "inherit",
+              color: !selectedCategory ? "white" : "inherit",
+              "&:hover": {
+                bgcolor: "primary.main",
+                color: "white",
+              },
+            }}
+          />
+          {restaurant.categories.map((category: Category) => (
+            <Chip
+              key={category.id}
+              label={category.name}
+              onClick={() => setSelectedCategory(category.name)}
+              sx={{
+                px: 2,
+                bgcolor:
+                  selectedCategory === category.name
+                    ? "primary.main"
+                    : "inherit",
+                color: selectedCategory === category.name ? "white" : "inherit",
+                "&:hover": {
+                  bgcolor: "primary.main",
+                  color: "white",
+                },
+              }}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          ))}
+        </Box>
+
+        {/* Menu Items */}
+        <Box sx={{ mb: 4 }}>
+          <MenuSection items={allItems} selectedCategory={selectedCategory} />
+        </Box>
+      </Container>
+
+      {/* Operating Hours & Info */}
+      <Container maxWidth="lg">
+        <Paper elevation={1} sx={{ p: 3, mb: 4 }}>
+          <Typography
+            variant="h6"
+            gutterBottom
+            sx={{ display: "flex", alignItems: "center" }}
           >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+            <AccessTime sx={{ mr: 1 }} /> Operating Hours
+          </Typography>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+              gap: 2,
+            }}
+          >
+            {restaurant.operatingHours.map(
+              (hours: OperatingHours, index: number) => (
+                <Typography key={index} variant="body2">
+                  {hours.days}: {hours.hours}
+                </Typography>
+              )
+            )}
+          </Box>
+          <Divider sx={{ my: 2 }} />
+          <Typography
+            variant="h6"
+            gutterBottom
+            sx={{ display: "flex", alignItems: "center" }}
+          >
+            <Info sx={{ mr: 1 }} /> Restaurant Information
+          </Typography>
+          <Typography variant="body2">
+            License Number: {restaurant.licenseNumber}
+          </Typography>
+          <Typography variant="body2">
+            License Type: {restaurant.licenseType}
+          </Typography>
+        </Paper>
+      </Container>
+    </Box>
   );
 }
