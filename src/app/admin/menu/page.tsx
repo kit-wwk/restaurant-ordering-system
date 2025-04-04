@@ -23,6 +23,7 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Stack,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -39,11 +40,17 @@ export default function MenuManagement() {
   const [editItem, setEditItem] = useState<MenuItem | null>(null);
   const [editCategoryId, setEditCategoryId] = useState<string>("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [editCategory, setEditCategory] = useState<Category | null>(null);
+  const [categoryFormData, setCategoryFormData] = useState({
+    name: "",
+  });
   const [formData, setFormData] = useState<Partial<MenuItem>>({
     name: "",
     description: "",
     price: 0,
     isAvailable: true,
+    image: "",
   });
 
   useEffect(() => {
@@ -70,6 +77,7 @@ export default function MenuManagement() {
       description: "",
       price: 0,
       isAvailable: true,
+      image: "",
     });
     setDialogOpen(true);
   };
@@ -121,20 +129,82 @@ export default function MenuManagement() {
     }
   };
 
+  const handleAddCategory = () => {
+    setEditCategory(null);
+    setCategoryFormData({ name: "" });
+    setCategoryDialogOpen(true);
+  };
+
+  const handleEditCategory = (category: Category) => {
+    setEditCategory(category);
+    setCategoryFormData({ name: category.name });
+    setCategoryDialogOpen(true);
+  };
+
+  const handleCategorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const method = editCategory ? "PUT" : "POST";
+      const res = await fetch("/api/admin/menu/categories", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editCategory?.id,
+          ...categoryFormData,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to save category");
+      setCategoryDialogOpen(false);
+      fetchMenu();
+    } catch (error) {
+      console.error("Failed to save category:", error);
+    }
+  };
+
   if (loading) {
     return <Typography>載入中...</Typography>;
   }
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" sx={{ mb: 3 }}>
-        菜單管理
-      </Typography>
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
+        <Typography variant="h4">菜單管理</Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={handleAddCategory}
+        >
+          新增分類
+        </Button>
+      </Stack>
 
       {categories.map((category) => (
         <Accordion key={category.id} defaultExpanded>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            sx={{
+              "& .MuiAccordionSummary-content": {
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              },
+            }}
+          >
             <Typography variant="h6">{category.name}</Typography>
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEditCategory(category);
+              }}
+            >
+              <EditIcon />
+            </IconButton>
           </AccordionSummary>
           <AccordionDetails>
             <Box sx={{ mb: 2 }}>
@@ -190,6 +260,36 @@ export default function MenuManagement() {
         </Accordion>
       ))}
 
+      <Dialog
+        open={categoryDialogOpen}
+        onClose={() => setCategoryDialogOpen(false)}
+      >
+        <form onSubmit={handleCategorySubmit}>
+          <DialogTitle>{editCategory ? "編輯分類" : "新增分類"}</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              label="分類名稱"
+              fullWidth
+              value={categoryFormData.name}
+              onChange={(e) =>
+                setCategoryFormData({
+                  ...categoryFormData,
+                  name: e.target.value,
+                })
+              }
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setCategoryDialogOpen(false)}>取消</Button>
+            <Button type="submit" variant="contained">
+              儲存
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
         <form onSubmit={handleSubmit}>
           <DialogTitle>{editItem ? "編輯項目" : "新增項目"}</DialogTitle>
@@ -224,6 +324,16 @@ export default function MenuManagement() {
               onChange={(e) =>
                 setFormData({ ...formData, price: Number(e.target.value) })
               }
+            />
+            <TextField
+              margin="dense"
+              label="圖片網址"
+              fullWidth
+              value={formData.image}
+              onChange={(e) =>
+                setFormData({ ...formData, image: e.target.value })
+              }
+              helperText="請輸入圖片的URL地址"
             />
             <FormControlLabel
               control={

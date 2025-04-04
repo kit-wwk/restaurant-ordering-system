@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { MenuItem, Category } from "@/types/restaurant";
 
 // Mock data - in a real app, this would be in a database
-let mockMenu: Category[] = [
+export const mockMenu: Category[] = [
   {
     id: "cat1",
     name: "日式料理",

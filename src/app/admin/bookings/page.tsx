@@ -15,11 +15,12 @@ import {
   Stack,
   TextField,
   IconButton,
+  Chip,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs from "dayjs";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelIcon from "@mui/icons-material/Cancel";
 
 interface Booking {
   id: string;
@@ -30,6 +31,18 @@ interface Booking {
   numberOfPeople: number;
   status: "confirmed" | "pending" | "cancelled";
 }
+
+const statusLabels = {
+  pending: "待確認",
+  confirmed: "已確認",
+  cancelled: "已取消",
+};
+
+const statusColors = {
+  pending: "warning",
+  confirmed: "success",
+  cancelled: "error",
+} as const;
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -69,6 +82,14 @@ export default function BookingsPage() {
     } catch (error) {
       console.error("Error updating booking status:", error);
     }
+  };
+
+  const handleConfirm = async (bookingId: string) => {
+    await handleStatusChange(bookingId, "confirmed");
+  };
+
+  const handleCancel = async (bookingId: string) => {
+    await handleStatusChange(bookingId, "cancelled");
   };
 
   const filteredBookings = bookings.filter((booking) =>
@@ -122,20 +143,41 @@ export default function BookingsPage() {
                 <TableCell>{booking.date}</TableCell>
                 <TableCell>{booking.time}</TableCell>
                 <TableCell>{booking.numberOfPeople}</TableCell>
-                <TableCell>{booking.status}</TableCell>
                 <TableCell>
-                  <IconButton
-                    onClick={() => handleStatusChange(booking.id, "confirmed")}
-                    color="primary"
-                  >
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton
-                    onClick={() => handleStatusChange(booking.id, "cancelled")}
-                    color="error"
-                  >
-                    <DeleteIcon />
-                  </IconButton>
+                  <Chip
+                    label={statusLabels[booking.status]}
+                    color={statusColors[booking.status]}
+                    size="small"
+                  />
+                </TableCell>
+                <TableCell>
+                  {booking.status === "pending" && (
+                    <>
+                      <IconButton
+                        onClick={() => handleConfirm(booking.id)}
+                        color="success"
+                        title="確認訂座"
+                      >
+                        <CheckCircleIcon />
+                      </IconButton>
+                      <IconButton
+                        onClick={() => handleCancel(booking.id)}
+                        color="error"
+                        title="取消訂座"
+                      >
+                        <CancelIcon />
+                      </IconButton>
+                    </>
+                  )}
+                  {booking.status === "confirmed" && (
+                    <IconButton
+                      onClick={() => handleCancel(booking.id)}
+                      color="error"
+                      title="取消訂座"
+                    >
+                      <CancelIcon />
+                    </IconButton>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

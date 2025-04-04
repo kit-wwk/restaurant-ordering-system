@@ -1,7 +1,17 @@
 import { NextResponse } from "next/server";
 
+export interface AdminBooking {
+  id: string;
+  customerName: string;
+  phoneNumber: string;
+  date: string;
+  time: string;
+  numberOfPeople: number;
+  status: "confirmed" | "pending" | "cancelled";
+}
+
 // Mock data for demonstration
-const mockBookings = [
+export const mockBookings: AdminBooking[] = [
   {
     id: "1",
     customerName: "陳大文",
