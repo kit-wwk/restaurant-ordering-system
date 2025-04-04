@@ -6,6 +6,7 @@ import Providers from "@/components/Providers/Providers";
 import MainLayout from "@/components/Layout/MainLayout";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Header from "@/components/Header/Header";
+import DatePickerProvider from "@/components/Providers/DatePickerProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,14 +24,16 @@ export default function RootLayout({
     <html lang="zh-HK">
       <body className={inter.className}>
         <ThemeRegistry>
-          <AuthProvider>
-            <Providers>
-              <MainLayout>
-                <Header />
-                {children}
-              </MainLayout>
-            </Providers>
-          </AuthProvider>
+          <DatePickerProvider>
+            <AuthProvider>
+              <Providers>
+                <MainLayout>
+                  <Header />
+                  {children}
+                </MainLayout>
+              </Providers>
+            </AuthProvider>
+          </DatePickerProvider>
         </ThemeRegistry>
       </body>
     </html>

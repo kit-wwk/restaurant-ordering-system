@@ -31,6 +31,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         error: null,
       };
     case "LOGIN_SUCCESS":
+      localStorage.setItem("user", JSON.stringify(action.payload));
       return {
         ...state,
         isLoading: false,
@@ -38,6 +39,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         error: null,
       };
     case "LOGIN_FAILURE":
+      localStorage.removeItem("user");
       return {
         ...state,
         isLoading: false,
@@ -45,6 +47,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         error: action.payload,
       };
     case "LOGOUT":
+      localStorage.removeItem("user");
       return {
         ...state,
         user: null,
@@ -74,19 +77,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
   useEffect(() => {
-    // Check for existing session
-    fetch("/api/auth/user")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.user) {
-          dispatch({ type: "LOGIN_SUCCESS", payload: data.user });
-        } else {
-          dispatch({ type: "LOGOUT" });
-        }
-      })
-      .catch(() => {
+    // Check for stored user data on mount
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        dispatch({ type: "LOGIN_SUCCESS", payload: user });
+      } catch {
+        localStorage.removeItem("user");
         dispatch({ type: "LOGOUT" });
-      });
+      }
+    } else {
+      dispatch({ type: "LOGOUT" });
+    }
   }, []);
 
   const login = async (email: string, password: string) => {

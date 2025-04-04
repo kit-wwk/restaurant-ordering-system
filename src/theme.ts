@@ -30,6 +30,15 @@ const theme = createTheme({
         },
       },
     },
+    MuiBox: {
+      styleOverrides: {
+        root: {
+          "&.MuiBox-root": {
+            margin: 0,
+          },
+        },
+      },
+    },
   },
 });
 
