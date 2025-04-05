@@ -20,7 +20,7 @@ export default function AddToCartButton({ item }: AddToCartButtonProps) {
   };
 
   return (
-    <Tooltip title="加入購物車">
+    <Tooltip title="Add to Cart">
       <IconButton
         color="primary"
         onClick={handleAddToCart}

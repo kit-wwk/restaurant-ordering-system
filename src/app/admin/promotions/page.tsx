@@ -86,7 +86,7 @@ export default function PromotionsManagement() {
       console.error("Error fetching promotions:", error);
       setSnackbar({
         open: true,
-        message: "優惠數據載入失敗",
+        message: "Failed to load promotions",
         severity: "error",
       });
     } finally {
@@ -192,23 +192,27 @@ export default function PromotionsManagement() {
         if (response.status === 409) {
           setSnackbar({
             open: true,
-            message: `此優惠正在被使用中，無法刪除 (${errorData.orderCount} 個訂單)`,
+            message: `This promotion is currently in use and cannot be deleted (${errorData.orderCount} orders)`,
             severity: "error",
           });
         } else {
-          throw new Error(errorData.message || "刪除優惠失敗");
+          throw new Error(errorData.message || "Failed to delete promotion");
         }
       } else {
         await fetchPromotions();
         setSnackbar({
           open: true,
-          message: "優惠已成功刪除",
+          message: "Promotion successfully deleted",
           severity: "success",
         });
       }
     } catch (error) {
       console.error("Error deleting promotion:", error);
-      setSnackbar({ open: true, message: "刪除優惠失敗", severity: "error" });
+      setSnackbar({
+        open: true,
+        message: "Failed to delete promotion",
+        severity: "error",
+      });
     } finally {
       setDeleteDialogOpen(false);
       setPromotionToDelete(null);
@@ -258,21 +262,29 @@ export default function PromotionsManagement() {
       }
 
       if (!response.ok) {
-        throw new Error(currentPromotion ? "更新優惠失敗" : "新增優惠失敗");
+        throw new Error(
+          currentPromotion
+            ? "Failed to update promotion"
+            : "Failed to add promotion"
+        );
       }
 
       await fetchPromotions();
       setOpenDialog(false);
       setSnackbar({
         open: true,
-        message: currentPromotion ? "優惠已成功更新" : "優惠已成功新增",
+        message: currentPromotion
+          ? "Promotion successfully updated"
+          : "Promotion successfully added",
         severity: "success",
       });
     } catch (error) {
       console.error("Error saving promotion:", error);
       setSnackbar({
         open: true,
-        message: currentPromotion ? "更新優惠失敗" : "新增優惠失敗",
+        message: currentPromotion
+          ? "Failed to update promotion"
+          : "Failed to add promotion",
         severity: "error",
       });
     }
@@ -288,13 +300,13 @@ export default function PromotionsManagement() {
           mb: 3,
         }}
       >
-        <Typography variant="h4">優惠管理</Typography>
+        <Typography variant="h4">Promotion Management</Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={handleAddPromotion}
         >
-          新增優惠
+          Add Promotion
         </Button>
       </Box>
 
@@ -303,25 +315,25 @@ export default function PromotionsManagement() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>描述</TableCell>
-                <TableCell>折扣百分比</TableCell>
-                <TableCell>最低消費</TableCell>
-                <TableCell>自動套用</TableCell>
-                <TableCell>創建時間</TableCell>
-                <TableCell>操作</TableCell>
+                <TableCell>Description</TableCell>
+                <TableCell>Discount Percentage</TableCell>
+                <TableCell>Minimum Order</TableCell>
+                <TableCell>Auto Apply</TableCell>
+                <TableCell>Created At</TableCell>
+                <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={6} align="center">
-                    載入中...
+                    Loading...
                   </TableCell>
                 </TableRow>
               ) : promotions.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} align="center">
-                    沒有找到優惠
+                    No promotions found
                   </TableCell>
                 </TableRow>
               ) : (
@@ -340,35 +352,28 @@ export default function PromotionsManagement() {
                     </TableCell>
                     <TableCell>
                       {promotion.isAutoApplied ? (
-                        <Chip label="是" color="primary" size="small" />
+                        <Chip label="Yes" color="primary" size="small" />
                       ) : (
-                        <Chip label="否" color="default" size="small" />
+                        <Chip label="No" color="default" size="small" />
                       )}
                     </TableCell>
                     <TableCell>
-                      {new Date(promotion.createdAt).toLocaleString("zh-HK")}
+                      {new Date(promotion.createdAt).toLocaleString("en-US")}
                     </TableCell>
                     <TableCell>
-                      <Stack direction="row" spacing={1}>
-                        <Tooltip title="編輯">
-                          <IconButton
-                            size="small"
-                            color="primary"
-                            onClick={() => handleEditPromotion(promotion)}
-                          >
-                            <EditIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="刪除">
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => handleDeletePrompt(promotion)}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
+                      <IconButton
+                        onClick={() => handleEditPromotion(promotion)}
+                        size="small"
+                      >
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton
+                        onClick={() => handleDeletePrompt(promotion)}
+                        size="small"
+                        color="error"
+                      >
+                        <DeleteIcon />
+                      </IconButton>
                     </TableCell>
                   </TableRow>
                 ))
@@ -378,82 +383,76 @@ export default function PromotionsManagement() {
         </TableContainer>
       </Paper>
 
-      {/* Add/Edit Promotion Dialog */}
-      <Dialog
-        open={openDialog}
-        onClose={() => setOpenDialog(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>{currentPromotion ? "編輯優惠" : "新增優惠"}</DialogTitle>
-        <DialogContent>
-          <Box component="form" sx={{ mt: 2 }} noValidate>
-            <TextField
-              margin="dense"
-              label="優惠描述"
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              fullWidth
-              required
-              error={formErrors.description}
-              helperText={formErrors.description ? "請輸入有效的優惠描述" : ""}
-              placeholder="例如: 滿$100減$20"
-            />
-            <TextField
-              margin="dense"
-              label="折扣百分比"
-              name="discountPercentage"
-              type="number"
-              value={formData.discountPercentage}
-              onChange={handleInputChange}
-              fullWidth
-              required
-              error={formErrors.discountPercentage}
-              helperText={
-                formErrors.discountPercentage ? "折扣必須在 0-100% 之間" : ""
-              }
-              InputProps={{
-                endAdornment: <InputAdornment position="end">%</InputAdornment>,
-              }}
-            />
-            <TextField
-              margin="dense"
-              label="最低消費"
-              name="minimumOrder"
-              type="number"
-              value={formData.minimumOrder}
-              onChange={handleInputChange}
-              fullWidth
-              required
-              error={formErrors.minimumOrder}
-              helperText={
-                formErrors.minimumOrder ? "最低消費必須大於或等於0" : ""
-              }
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">HK$</InputAdornment>
-                ),
-              }}
-            />
-            <FormControlLabel
-              control={
-                <Switch
-                  name="isAutoApplied"
-                  checked={formData.isAutoApplied}
-                  onChange={handleInputChange}
-                  color="primary"
-                />
-              }
-              label="自動套用優惠"
-              sx={{ mt: 2 }}
-            />
-          </Box>
+      {/* Edit/Add Dialog */}
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+        <DialogTitle>
+          {currentPromotion ? "Edit Promotion" : "Add Promotion"}
+        </DialogTitle>
+        <DialogContent sx={{ minWidth: 400 }}>
+          <TextField
+            margin="dense"
+            fullWidth
+            label="Description"
+            name="description"
+            value={formData.description}
+            onChange={handleInputChange}
+            error={formErrors.description}
+            helperText={formErrors.description && "Description is required"}
+          />
+
+          <TextField
+            margin="dense"
+            fullWidth
+            label="Discount Percentage"
+            name="discountPercentage"
+            type="number"
+            value={formData.discountPercentage}
+            onChange={handleInputChange}
+            error={formErrors.discountPercentage}
+            helperText={
+              formErrors.discountPercentage &&
+              "Discount must be between 0 and 100%"
+            }
+            InputProps={{
+              endAdornment: <InputAdornment position="end">%</InputAdornment>,
+            }}
+          />
+
+          <TextField
+            margin="dense"
+            fullWidth
+            label="Minimum Order"
+            name="minimumOrder"
+            type="number"
+            value={formData.minimumOrder}
+            onChange={handleInputChange}
+            error={formErrors.minimumOrder}
+            helperText={
+              formErrors.minimumOrder && "Minimum order must be positive"
+            }
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">HK$</InputAdornment>
+              ),
+            }}
+          />
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={formData.isAutoApplied}
+                onChange={handleInputChange}
+                name="isAutoApplied"
+                color="primary"
+              />
+            }
+            label="Automatically apply this promotion"
+          />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>取消</Button>
+          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
           <Button onClick={handleSubmit} variant="contained">
-            保存
+            Save
           </Button>
         </DialogActions>
       </Dialog>
@@ -463,39 +462,40 @@ export default function PromotionsManagement() {
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
       >
-        <DialogTitle>確認刪除</DialogTitle>
+        <DialogTitle>Confirm Deletion</DialogTitle>
         <DialogContent>
           <Typography>
-            你確定要刪除優惠 "{promotionToDelete?.description}"
-            嗎？此操作無法撤銷。
+            Are you sure you want to delete this promotion?
           </Typography>
+          {promotionToDelete && (
+            <Box mt={2}>
+              <Typography variant="body2" fontWeight="bold">
+                {promotionToDelete.description}
+              </Typography>
+              <Typography variant="body2">
+                Discount: {promotionToDelete.discountPercentage}%
+              </Typography>
+            </Box>
+          )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>取消</Button>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
           <Button
             onClick={handleDeletePromotion}
-            color="error"
             variant="contained"
+            color="error"
           >
-            刪除
+            Delete
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar for feedback */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
       >
-        <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          severity={snackbar.severity}
-          sx={{ width: "100%" }}
-        >
-          {snackbar.message}
-        </Alert>
+        <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
       </Snackbar>
     </Box>
   );

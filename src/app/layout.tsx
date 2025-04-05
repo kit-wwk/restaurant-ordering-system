@@ -11,7 +11,7 @@ import DatePickerProvider from "@/components/Providers/DatePickerProvider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "餐廳點餐系統",
+  title: "Restaurant Ordering System",
   description: "A restaurant ordering system",
 };
 
@@ -21,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="zh-HK" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeRegistry>
           <DatePickerProvider>

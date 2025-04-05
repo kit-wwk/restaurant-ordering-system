@@ -90,7 +90,7 @@ export default function MenuManagement() {
   };
 
   const handleDeleteItem = async (categoryId: string, itemId: string) => {
-    if (!confirm("確定要刪除此項目嗎？")) return;
+    if (!confirm("Are you sure you want to delete this item?")) return;
 
     try {
       const res = await fetch(
@@ -162,7 +162,7 @@ export default function MenuManagement() {
   };
 
   if (loading) {
-    return <Typography>載入中...</Typography>;
+    return <Typography>Loading...</Typography>;
   }
 
   return (
@@ -173,13 +173,13 @@ export default function MenuManagement() {
         alignItems="center"
         mb={3}
       >
-        <Typography variant="h4">菜單管理</Typography>
+        <Typography variant="h4">Menu Management</Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={handleAddCategory}
         >
-          新增分類
+          Add Category
         </Button>
       </Stack>
 
@@ -213,18 +213,18 @@ export default function MenuManagement() {
                 startIcon={<AddIcon />}
                 onClick={() => handleAddItem(category.id)}
               >
-                新增項目
+                Add Item
               </Button>
             </Box>
             <TableContainer component={Paper}>
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>名稱</TableCell>
-                    <TableCell>描述</TableCell>
-                    <TableCell>價格</TableCell>
-                    <TableCell>狀態</TableCell>
-                    <TableCell>操作</TableCell>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Description</TableCell>
+                    <TableCell>Price</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -234,7 +234,7 @@ export default function MenuManagement() {
                       <TableCell>{item.description}</TableCell>
                       <TableCell>HK$ {formatPrice(item.price)}</TableCell>
                       <TableCell>
-                        {item.isAvailable ? "供應中" : "已下架"}
+                        {item.isAvailable ? "Available" : "Unavailable"}
                       </TableCell>
                       <TableCell>
                         <IconButton
@@ -265,12 +265,14 @@ export default function MenuManagement() {
         onClose={() => setCategoryDialogOpen(false)}
       >
         <form onSubmit={handleCategorySubmit}>
-          <DialogTitle>{editCategory ? "編輯分類" : "新增分類"}</DialogTitle>
+          <DialogTitle>
+            {editCategory ? "Edit Category" : "Add Category"}
+          </DialogTitle>
           <DialogContent>
             <TextField
               autoFocus
               margin="dense"
-              label="分類名稱"
+              label="Category Name"
               fullWidth
               value={categoryFormData.name}
               onChange={(e) =>
@@ -282,9 +284,9 @@ export default function MenuManagement() {
             />
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setCategoryDialogOpen(false)}>取消</Button>
+            <Button onClick={() => setCategoryDialogOpen(false)}>Cancel</Button>
             <Button type="submit" variant="contained">
-              儲存
+              Save
             </Button>
           </DialogActions>
         </form>
@@ -292,12 +294,12 @@ export default function MenuManagement() {
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
         <form onSubmit={handleSubmit}>
-          <DialogTitle>{editItem ? "編輯項目" : "新增項目"}</DialogTitle>
+          <DialogTitle>{editItem ? "Edit Item" : "Add Item"}</DialogTitle>
           <DialogContent>
             <TextField
               autoFocus
               margin="dense"
-              label="名稱"
+              label="Name"
               fullWidth
               value={formData.name}
               onChange={(e) =>
@@ -306,7 +308,7 @@ export default function MenuManagement() {
             />
             <TextField
               margin="dense"
-              label="描述"
+              label="Description"
               fullWidth
               multiline
               rows={3}
@@ -317,7 +319,7 @@ export default function MenuManagement() {
             />
             <TextField
               margin="dense"
-              label="價格"
+              label="Price"
               type="number"
               fullWidth
               value={formData.price}
@@ -327,13 +329,13 @@ export default function MenuManagement() {
             />
             <TextField
               margin="dense"
-              label="圖片網址"
+              label="Image URL"
               fullWidth
               value={formData.image}
               onChange={(e) =>
                 setFormData({ ...formData, image: e.target.value })
               }
-              helperText="請輸入圖片的URL地址"
+              helperText="Please enter the URL of the image"
             />
             <FormControlLabel
               control={
@@ -344,13 +346,13 @@ export default function MenuManagement() {
                   }
                 />
               }
-              label="供應中"
+              label="Available"
             />
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setDialogOpen(false)}>取消</Button>
+            <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
             <Button type="submit" variant="contained">
-              儲存
+              Save
             </Button>
           </DialogActions>
         </form>

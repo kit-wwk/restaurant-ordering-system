@@ -16,7 +16,7 @@ export function AdminNav() {
           <ListItemIcon>
             <Dashboard />
           </ListItemIcon>
-          <ListItemText primary="總覽" />
+          <ListItemText primary="Dashboard" />
         </ListItem>
       </Link>
 
@@ -28,7 +28,7 @@ export function AdminNav() {
           <ListItemIcon>
             <Restaurant />
           </ListItemIcon>
-          <ListItemText primary="訂單管理" />
+          <ListItemText primary="Order Management" />
         </ListItem>
       </Link>
 
@@ -40,7 +40,7 @@ export function AdminNav() {
           <ListItemIcon>
             <MenuBook />
           </ListItemIcon>
-          <ListItemText primary="菜單管理" />
+          <ListItemText primary="Menu Management" />
         </ListItem>
       </Link>
 
@@ -52,7 +52,7 @@ export function AdminNav() {
           <ListItemIcon>
             <EventNote />
           </ListItemIcon>
-          <ListItemText primary="訂座管理" />
+          <ListItemText primary="Booking Management" />
         </ListItem>
       </Link>
 
@@ -64,7 +64,7 @@ export function AdminNav() {
           <ListItemIcon>
             <Settings />
           </ListItemIcon>
-          <ListItemText primary="餐廳設定" />
+          <ListItemText primary="Restaurant Settings" />
         </ListItem>
       </Link>
     </List>
