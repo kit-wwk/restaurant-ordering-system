@@ -49,19 +49,19 @@ const statusColors: Record<string, "warning" | "info" | "success" | "error"> = {
   cancelled: "error",
 };
 
-const orderStatusLabels: Record<string, string> = {
-  pending: "待處理",
-  confirmed: "已確認",
-  preparing: "準備中",
-  ready: "可取餐",
-  completed: "已完成",
-  cancelled: "已取消",
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  pending: "Pending",
+  confirmed: "Confirmed",
+  preparing: "Preparing",
+  ready: "Ready",
+  completed: "Completed",
+  cancelled: "Cancelled",
 };
 
-const bookingStatusLabels: Record<string, string> = {
-  pending: "待確認",
-  confirmed: "已確認",
-  cancelled: "已取消",
+const BOOKING_STATUS_LABELS: Record<string, string> = {
+  pending: "Pending",
+  confirmed: "Confirmed",
+  cancelled: "Cancelled",
 };
 
 export default function AdminDashboard() {
@@ -82,13 +82,13 @@ export default function AdminDashboard() {
   }, []);
 
   if (loading || !stats) {
-    return <Typography>載入中...</Typography>;
+    return <Typography>Loading...</Typography>;
   }
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" sx={{ mb: 3 }}>
-        總覽
+      <Typography variant="h4" component="h1" gutterBottom>
+        Dashboard
       </Typography>
       <Box sx={{ display: "grid", gap: 3 }}>
         <Box
@@ -107,7 +107,7 @@ export default function AdminDashboard() {
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                 <ShoppingCart color="primary" sx={{ mr: 1 }} />
-                <Typography variant="h6">總訂單</Typography>
+                <Typography variant="h6">Total Orders</Typography>
               </Box>
               <Typography variant="h4">{stats.totalOrders}</Typography>
             </CardContent>
@@ -117,7 +117,7 @@ export default function AdminDashboard() {
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                 <AttachMoney color="primary" sx={{ mr: 1 }} />
-                <Typography variant="h6">總收入</Typography>
+                <Typography variant="h6">Total Revenue</Typography>
               </Box>
               <Typography variant="h4">
                 HK$ {formatPrice(stats.totalRevenue)}
@@ -129,7 +129,7 @@ export default function AdminDashboard() {
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                 <Event color="primary" sx={{ mr: 1 }} />
-                <Typography variant="h6">總訂座</Typography>
+                <Typography variant="h6">Total Bookings</Typography>
               </Box>
               <Typography variant="h4">{stats.totalBookings}</Typography>
             </CardContent>
@@ -139,7 +139,7 @@ export default function AdminDashboard() {
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                 <People color="primary" sx={{ mr: 1 }} />
-                <Typography variant="h6">總用戶</Typography>
+                <Typography variant="h6">Total Users</Typography>
               </Box>
               <Typography variant="h4">{stats.totalUsers}</Typography>
             </CardContent>
@@ -162,17 +162,17 @@ export default function AdminDashboard() {
               flexDirection: "column",
             }}
           >
-            <Typography variant="h6" gutterBottom>
-              最近訂單
+            <Typography variant="h5" component="h2" gutterBottom sx={{ mt: 4 }}>
+              Recent Orders
             </Typography>
             <TableContainer sx={{ flex: 1 }}>
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>客戶</TableCell>
-                    <TableCell>金額</TableCell>
-                    <TableCell>狀態</TableCell>
-                    <TableCell>時間</TableCell>
+                    <TableCell>Customer</TableCell>
+                    <TableCell>Amount</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Time</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -182,7 +182,7 @@ export default function AdminDashboard() {
                       <TableCell>HK$ {formatPrice(order.total)}</TableCell>
                       <TableCell>
                         <Chip
-                          label={orderStatusLabels[order.status]}
+                          label={ORDER_STATUS_LABELS[order.status]}
                           color={statusColors[order.status]}
                           size="small"
                         />
@@ -206,18 +206,18 @@ export default function AdminDashboard() {
               flexDirection: "column",
             }}
           >
-            <Typography variant="h6" gutterBottom>
-              最近訂座
+            <Typography variant="h5" component="h2" gutterBottom sx={{ mt: 4 }}>
+              Recent Bookings
             </Typography>
             <TableContainer sx={{ flex: 1 }}>
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>客戶</TableCell>
-                    <TableCell>日期</TableCell>
-                    <TableCell>時間</TableCell>
-                    <TableCell>人數</TableCell>
-                    <TableCell>狀態</TableCell>
+                    <TableCell>Customer</TableCell>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Time</TableCell>
+                    <TableCell>Guests</TableCell>
+                    <TableCell>Status</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -229,7 +229,7 @@ export default function AdminDashboard() {
                       <TableCell>{booking.numberOfPeople}</TableCell>
                       <TableCell>
                         <Chip
-                          label={bookingStatusLabels[booking.status]}
+                          label={BOOKING_STATUS_LABELS[booking.status]}
                           color={statusColors[booking.status]}
                           size="small"
                         />

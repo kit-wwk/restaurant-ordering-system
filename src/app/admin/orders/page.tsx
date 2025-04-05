@@ -146,43 +146,43 @@ export default function OrdersManagement() {
   };
 
   if (loading) {
-    return <Typography>載入中...</Typography>;
+    return <Typography>Loading...</Typography>;
   }
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" sx={{ mb: 3 }}>
-        訂單管理
+      <Typography variant="h4" gutterBottom>
+        Order Management
       </Typography>
 
       <Stack direction="row" spacing={2} mb={3}>
         <TextField
           select
-          label="訂單狀態"
+          label="Order Status"
           value={statusFilter}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
             setStatusFilter(e.target.value)
           }
           sx={{ minWidth: 200 }}
         >
-          <MenuItem value="">全部</MenuItem>
-          <MenuItem value="pending">待處理</MenuItem>
-          <MenuItem value="confirmed">已確認</MenuItem>
-          <MenuItem value="preparing">準備中</MenuItem>
-          <MenuItem value="ready">可取餐</MenuItem>
-          <MenuItem value="completed">已完成</MenuItem>
-          <MenuItem value="cancelled">已取消</MenuItem>
+          <MenuItem value="">All</MenuItem>
+          <MenuItem value="pending">Pending</MenuItem>
+          <MenuItem value="confirmed">Confirmed</MenuItem>
+          <MenuItem value="preparing">Preparing</MenuItem>
+          <MenuItem value="ready">Ready for Pickup</MenuItem>
+          <MenuItem value="completed">Completed</MenuItem>
+          <MenuItem value="cancelled">Cancelled</MenuItem>
         </TextField>
 
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <DatePicker
-            label="開始日期"
+            label="Start Date"
             value={startDate}
             onChange={(newValue) => setStartDate(newValue)}
             format="YYYY-MM-DD"
           />
           <DatePicker
-            label="結束日期"
+            label="End Date"
             value={endDate}
             onChange={(newValue) => setEndDate(newValue)}
             format="YYYY-MM-DD"
@@ -194,14 +194,14 @@ export default function OrdersManagement() {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>訂單編號</TableCell>
-              <TableCell>客戶名稱</TableCell>
-              <TableCell>小計</TableCell>
-              <TableCell>優惠</TableCell>
-              <TableCell>總計</TableCell>
-              <TableCell>狀態</TableCell>
-              <TableCell>建立時間</TableCell>
-              <TableCell>操作</TableCell>
+              <TableCell>Order ID</TableCell>
+              <TableCell>Customer Name</TableCell>
+              <TableCell>Subtotal</TableCell>
+              <TableCell>Discount</TableCell>
+              <TableCell>Total</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Created Time</TableCell>
+              <TableCell>Action</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -209,7 +209,7 @@ export default function OrdersManagement() {
               <TableRow key={order.id}>
                 <TableCell>{order.id}</TableCell>
                 <TableCell>
-                  {order.guestName || order.user?.name || "未命名客戶"}
+                  {order.guestName || order.user?.name || "Unnamed Customer"}
                 </TableCell>
                 <TableCell>HK$ {order.subtotal.toFixed(2)}</TableCell>
                 <TableCell>
@@ -227,7 +227,7 @@ export default function OrdersManagement() {
                       >
                         {order.promotion.description}
                         <br />
-                        折扣金額：HK$ {order.discount.toFixed(2)}
+                        Discount Amount: HK$ {order.discount.toFixed(2)}
                       </Typography>
                     </Stack>
                   ) : (
@@ -247,12 +247,12 @@ export default function OrdersManagement() {
                     }
                     size="small"
                   >
-                    <MenuItem value="pending">待處理</MenuItem>
-                    <MenuItem value="confirmed">已確認</MenuItem>
-                    <MenuItem value="preparing">準備中</MenuItem>
-                    <MenuItem value="ready">可取餐</MenuItem>
-                    <MenuItem value="completed">已完成</MenuItem>
-                    <MenuItem value="cancelled">已取消</MenuItem>
+                    <MenuItem value="pending">Pending</MenuItem>
+                    <MenuItem value="confirmed">Confirmed</MenuItem>
+                    <MenuItem value="preparing">Preparing</MenuItem>
+                    <MenuItem value="ready">Ready for Pickup</MenuItem>
+                    <MenuItem value="completed">Completed</MenuItem>
+                    <MenuItem value="cancelled">Cancelled</MenuItem>
                   </Select>
                 </TableCell>
                 <TableCell>{formatDate(order.createdAt)}</TableCell>
@@ -262,7 +262,7 @@ export default function OrdersManagement() {
                     size="small"
                     onClick={() => handleOrderClick(order)}
                   >
-                    查看詳情
+                    View Details
                   </Button>
                 </TableCell>
               </TableRow>
@@ -281,38 +281,42 @@ export default function OrdersManagement() {
           <DialogContent>
             <Box mb={2}>
               <Typography variant="h6" gutterBottom>
-                訂單詳情 #{selectedOrder.id}
+                Order Details #{selectedOrder.id}
               </Typography>
               <Box mb={2}>
-                <Typography variant="subtitle1">客戶資料</Typography>
+                <Typography variant="subtitle1">
+                  Customer Information
+                </Typography>
                 <Typography>
-                  姓名：
+                  Name:
                   {selectedOrder.guestName ||
                     selectedOrder.user?.name ||
-                    "未命名客戶"}
+                    "Unnamed Customer"}
                 </Typography>
                 <Typography>
-                  電郵：
+                  Email:
                   {selectedOrder.guestEmail || selectedOrder.user?.email || "-"}
                 </Typography>
-                <Typography>電話：{selectedOrder.guestPhone || "-"}</Typography>
                 <Typography>
-                  用戶ID：
+                  Phone: {selectedOrder.guestPhone || "-"}
+                </Typography>
+                <Typography>
+                  User ID:
                   {selectedOrder.userId || selectedOrder.user?.id || "-"}
                 </Typography>
               </Box>
 
               <Typography variant="subtitle1" gutterBottom>
-                訂單項目
+                Order Items
               </Typography>
               <TableContainer component={Paper} variant="outlined">
                 <Table size="small">
                   <TableHead>
                     <TableRow>
-                      <TableCell>品項</TableCell>
-                      <TableCell align="right">單價</TableCell>
-                      <TableCell align="right">數量</TableCell>
-                      <TableCell align="right">小計</TableCell>
+                      <TableCell>Item</TableCell>
+                      <TableCell align="right">Price</TableCell>
+                      <TableCell align="right">Quantity</TableCell>
+                      <TableCell align="right">Subtotal</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -355,7 +359,7 @@ export default function OrdersManagement() {
                                   variant="caption"
                                   color="success.main"
                                 >
-                                  折扣後：HK${" "}
+                                  Discounted Price: HK${" "}
                                   {(
                                     item.price *
                                     (1 -
@@ -380,7 +384,7 @@ export default function OrdersManagement() {
                                   variant="caption"
                                   color="success.main"
                                 >
-                                  折扣後：HK${" "}
+                                  Discounted Subtotal: HK${" "}
                                   {(
                                     item.price *
                                     item.quantity *
@@ -397,7 +401,7 @@ export default function OrdersManagement() {
                     ))}
                     <TableRow>
                       <TableCell colSpan={3} align="right">
-                        <strong>小計</strong>
+                        <strong>Subtotal</strong>
                       </TableCell>
                       <TableCell align="right">
                         <strong>HK$ {selectedOrder.subtotal.toFixed(2)}</strong>
@@ -419,19 +423,20 @@ export default function OrdersManagement() {
                                 variant="body2"
                                 color="success.contrastText"
                               >
-                                已使用優惠：
+                                Applied Discount:
                                 {selectedOrder.promotion.description}
                               </Typography>
                               <Typography
                                 variant="caption"
                                 color="success.contrastText"
                               >
-                                訂單滿 HK${" "}
+                                Order Total HK${" "}
                                 {selectedOrder.promotion.minimumOrder.toFixed(
                                   2
                                 )}{" "}
-                                即減{" "}
+                                or more gets{" "}
                                 {selectedOrder.promotion.discountPercentage}%
+                                off
                               </Typography>
                             </Box>
                           </TableCell>
@@ -439,8 +444,8 @@ export default function OrdersManagement() {
                         <TableRow>
                           <TableCell colSpan={3} align="right">
                             <strong>
-                              折扣 ({selectedOrder.promotion.discountPercentage}
-                              % off)
+                              Discount (
+                              {selectedOrder.promotion.discountPercentage}% off)
                             </strong>
                           </TableCell>
                           <TableCell
@@ -456,7 +461,7 @@ export default function OrdersManagement() {
                     )}
                     <TableRow>
                       <TableCell colSpan={3} align="right">
-                        <Typography variant="subtitle1">總計</Typography>
+                        <Typography variant="subtitle1">Total</Typography>
                       </TableCell>
                       <TableCell align="right">
                         <Typography variant="subtitle1">
@@ -471,7 +476,7 @@ export default function OrdersManagement() {
           </DialogContent>
         )}
         <DialogActions>
-          <Button onClick={() => setIsDialogOpen(false)}>關閉</Button>
+          <Button onClick={() => setIsDialogOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
     </Box>

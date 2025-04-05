@@ -13,6 +13,14 @@ import {
   Stack,
   Pagination,
   Chip,
+  Typography,
+  InputLabel,
+  MenuItem,
+  Box,
+  TablePagination,
+  Select,
+  TextField,
+  FormControl,
 } from "@mui/material";
 import type { AdminBooking } from "@/app/api/admin/bookings/route";
 
@@ -96,67 +104,66 @@ export default function BookingsPage() {
   const getStatusText = (status: string) => {
     switch (status) {
       case "CONFIRMED":
-        return "已確認";
+        return "Confirmed";
       case "PENDING":
-        return "待確認";
+        return "Pending";
       case "CANCELLED":
-        return "已取消";
+        return "Cancelled";
       default:
         return status;
     }
   };
 
   if (loading) {
-    return (
-      <div style={{ padding: "40px" }}>
-        <h1
-          style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "20px" }}
-        >
-          預訂管理
-        </h1>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            minHeight: "400px",
-          }}
-        >
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-        </div>
-      </div>
-    );
+    return <Typography>Loading...</Typography>;
   }
 
   return (
     <div style={{ padding: "40px" }}>
-      <h1
-        style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "20px" }}
-      >
-        預訂管理
-      </h1>
+      <Typography variant="h4" gutterBottom>
+        Booking Management
+      </Typography>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell style={{ width: 150 }}>客人</TableCell>
-              <TableCell style={{ width: 120 }}>電話</TableCell>
-              <TableCell style={{ width: 100 }}>日期</TableCell>
-              <TableCell style={{ width: 80 }}>時間</TableCell>
-              <TableCell style={{ width: 80 }}>人數</TableCell>
-              <TableCell style={{ width: 200 }}>備註</TableCell>
-              <TableCell style={{ width: 100 }}>狀態</TableCell>
-              <TableCell style={{ width: 150 }}>操作</TableCell>
+              <TableCell>ID</TableCell>
+              <TableCell>Customer</TableCell>
+              <TableCell>Date</TableCell>
+              <TableCell>Time</TableCell>
+              <TableCell>Guests</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Notes</TableCell>
+              <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {bookings.map((booking) => (
               <TableRow key={booking.id}>
-                <TableCell>{booking.customerName}</TableCell>
-                <TableCell>{booking.phoneNumber}</TableCell>
+                <TableCell>{booking.id}</TableCell>
+                <TableCell>
+                  {booking.customerName || "Unnamed Customer"}
+                </TableCell>
                 <TableCell>{booking.date}</TableCell>
                 <TableCell>{booking.time}</TableCell>
                 <TableCell>{booking.numberOfPeople}</TableCell>
+                <TableCell>
+                  <FormControl size="small" style={{ minWidth: "100px" }}>
+                    <Select
+                      value={booking.status}
+                      onChange={(e) =>
+                        handleStatusChange(booking.id, e.target.value as string)
+                      }
+                      color="primary"
+                      displayEmpty
+                      native
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="confirmed">Confirmed</option>
+                      <option value="cancelled">Cancelled</option>
+                    </Select>
+                  </FormControl>
+                </TableCell>
                 <TableCell
                   style={{
                     maxWidth: 200,
@@ -166,13 +173,6 @@ export default function BookingsPage() {
                   }}
                 >
                   {booking.notes}
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={getStatusText(booking.status)}
-                    color={getStatusColor(booking.status)}
-                    size="small"
-                  />
                 </TableCell>
                 <TableCell>
                   {booking.status === "PENDING" && (
@@ -185,7 +185,7 @@ export default function BookingsPage() {
                           handleStatusChange(booking.id, "CONFIRMED")
                         }
                       >
-                        確認
+                        Confirm
                       </Button>
                       <Button
                         variant="outlined"
@@ -195,7 +195,7 @@ export default function BookingsPage() {
                           handleStatusChange(booking.id, "CANCELLED")
                         }
                       >
-                        取消
+                        Cancel
                       </Button>
                     </Stack>
                   )}
@@ -208,7 +208,7 @@ export default function BookingsPage() {
                         handleStatusChange(booking.id, "CANCELLED")
                       }
                     >
-                      取消
+                      Cancel
                     </Button>
                   )}
                 </TableCell>
