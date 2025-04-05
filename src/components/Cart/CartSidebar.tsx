@@ -21,7 +21,7 @@ import { formatPrice } from "@/utils/format";
 import { useState, useEffect } from "react";
 import { useSnackbar } from "notistack";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 
 interface CartSidebarProps {
   open: boolean;
