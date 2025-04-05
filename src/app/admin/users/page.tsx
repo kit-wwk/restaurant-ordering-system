@@ -121,7 +121,7 @@ export default function UsersPage() {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm("確定要刪除此用戶嗎？")) return;
+    if (!confirm("Are you sure you want to delete this user?")) return;
 
     try {
       const response = await fetch(`/api/admin/users/${userId}`, {
@@ -158,12 +158,12 @@ export default function UsersPage() {
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" sx={{ mb: 3 }}>
-        用戶管理
+        User Management
       </Typography>
 
       <Stack direction="row" spacing={2} mb={3}>
         <TextField
-          label="搜尋用戶名稱或電郵"
+          label="Search users by name or email"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           sx={{ width: 300 }}
@@ -173,7 +173,7 @@ export default function UsersPage() {
           startIcon={<PersonAddIcon />}
           onClick={() => setIsAddDialogOpen(true)}
         >
-          新增用戶
+          Add User
         </Button>
       </Stack>
 
@@ -181,12 +181,12 @@ export default function UsersPage() {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>用戶名稱</TableCell>
-              <TableCell>電郵</TableCell>
-              <TableCell>角色</TableCell>
-              <TableCell>電話</TableCell>
-              <TableCell>建立日期</TableCell>
-              <TableCell>操作</TableCell>
+              <TableCell>User Name</TableCell>
+              <TableCell>Email</TableCell>
+              <TableCell>Role</TableCell>
+              <TableCell>Phone</TableCell>
+              <TableCell>Created Date</TableCell>
+              <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -197,7 +197,7 @@ export default function UsersPage() {
                 <TableCell>{user.role}</TableCell>
                 <TableCell>{user.phone || "-"}</TableCell>
                 <TableCell>
-                  {new Date(user.createdAt).toLocaleDateString("zh-HK")}
+                  {new Date(user.createdAt).toLocaleDateString("en-US")}
                 </TableCell>
                 <TableCell>
                   <IconButton

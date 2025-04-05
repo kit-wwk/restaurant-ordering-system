@@ -72,17 +72,17 @@ export default function ProfilePage() {
     const newErrors: ValidationErrors = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = "姓名不能為空";
+      newErrors.name = "Name cannot be empty";
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = "電郵地址不能為空";
+      newErrors.email = "Email address cannot be empty";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "請輸入有效的電郵地址";
+      newErrors.email = "Please enter a valid email address";
     }
 
     if (formData.phone && !/^[0-9]{8}$/.test(formData.phone)) {
-      newErrors.phone = "請輸入有效的8位電話號碼";
+      newErrors.phone = "Please enter a valid 8-digit phone number";
     }
 
     if (isEditing) {
@@ -90,15 +90,17 @@ export default function ProfilePage() {
         !formData.currentPassword &&
         (formData.newPassword || formData.confirmPassword)
       ) {
-        newErrors.currentPassword = "更改密碼時需要輸入目前密碼";
+        newErrors.currentPassword =
+          "Current password is required to change password";
       }
 
       if (formData.newPassword && formData.newPassword.length < 8) {
-        newErrors.newPassword = "新密碼必須至少8個字符";
+        newErrors.newPassword = "New password must be at least 8 characters";
       }
 
       if (formData.newPassword !== formData.confirmPassword) {
-        newErrors.confirmPassword = "確認密碼與新密碼不符";
+        newErrors.confirmPassword =
+          "Confirm password does not match new password";
       }
     }
 
@@ -126,7 +128,7 @@ export default function ProfilePage() {
         setIsEditing(false);
         setSnackbar({
           open: true,
-          message: "個人資料已成功更新",
+          message: "Profile updated successfully",
           severity: "success",
         });
         // Reset password fields
@@ -137,13 +139,13 @@ export default function ProfilePage() {
           confirmPassword: "",
         }));
       } else {
-        throw new Error("更新失敗");
+        throw new Error("Update failed");
       }
     } catch (error) {
       console.error("Error updating profile:", error);
       setSnackbar({
         open: true,
-        message: "更新個人資料時發生錯誤",
+        message: "Error updating profile",
         severity: "error",
       });
     }
@@ -172,7 +174,7 @@ export default function ProfilePage() {
       <Paper sx={{ p: 4, mt: 2 }}>
         <Stack spacing={4}>
           <Typography variant="h4" align="center" gutterBottom>
-            個人資料
+            My Profile
           </Typography>
 
           <Box display="flex" justifyContent="center">
@@ -190,7 +192,7 @@ export default function ProfilePage() {
               <Box display="flex" justifyContent="center">
                 <TextField
                   fullWidth
-                  label="姓名"
+                  label="Name"
                   value={formData.name}
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
@@ -204,7 +206,7 @@ export default function ProfilePage() {
 
               <TextField
                 fullWidth
-                label="電郵地址"
+                label="Email Address"
                 type="email"
                 value={formData.email}
                 onChange={(e) =>
@@ -218,25 +220,27 @@ export default function ProfilePage() {
 
               <TextField
                 fullWidth
-                label="電話號碼"
+                label="Phone Number"
                 value={formData.phone}
                 onChange={(e) =>
                   setFormData({ ...formData, phone: e.target.value })
                 }
                 disabled={!isEditing}
                 error={!!errors.phone}
-                helperText={errors.phone || "請輸入8位數字電話號碼"}
+                helperText={
+                  errors.phone || "Please enter an 8-digit phone number"
+                }
               />
 
               {isEditing && (
                 <Box>
                   <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                    更改密碼
+                    Change Password
                   </Typography>
                   <Stack spacing={3}>
                     <TextField
                       fullWidth
-                      label="目前密碼"
+                      label="Current Password"
                       type="password"
                       value={formData.currentPassword}
                       onChange={(e) =>
@@ -251,7 +255,7 @@ export default function ProfilePage() {
 
                     <TextField
                       fullWidth
-                      label="新密碼"
+                      label="New Password"
                       type="password"
                       value={formData.newPassword}
                       onChange={(e) =>
@@ -261,12 +265,15 @@ export default function ProfilePage() {
                         })
                       }
                       error={!!errors.newPassword}
-                      helperText={errors.newPassword || "密碼必須至少8個字符"}
+                      helperText={
+                        errors.newPassword ||
+                        "Password must be at least 8 characters"
+                      }
                     />
 
                     <TextField
                       fullWidth
-                      label="確認新密碼"
+                      label="Confirm Password"
                       type="password"
                       value={formData.confirmPassword}
                       onChange={(e) =>
@@ -282,35 +289,32 @@ export default function ProfilePage() {
                 </Box>
               )}
 
-              <Stack
-                direction="row"
-                spacing={2}
-                justifyContent="center"
-                sx={{ mt: 4 }}
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  gap: 2,
+                  mt: 3,
+                }}
               >
                 {isEditing ? (
                   <>
-                    <Button
-                      variant="outlined"
-                      onClick={handleCancel}
-                      size="large"
-                    >
-                      取消
+                    <Button variant="outlined" onClick={handleCancel}>
+                      Cancel
                     </Button>
-                    <Button type="submit" variant="contained" size="large">
-                      儲存
+                    <Button variant="contained" type="submit">
+                      Save
                     </Button>
                   </>
                 ) : (
                   <Button
                     variant="contained"
                     onClick={() => setIsEditing(true)}
-                    size="large"
                   >
-                    編輯
+                    Edit Profile
                   </Button>
                 )}
-              </Stack>
+              </Box>
             </Stack>
           </form>
         </Stack>
@@ -319,15 +323,9 @@ export default function ProfilePage() {
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
-        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
       >
-        <Alert
-          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-          severity={snackbar.severity}
-          sx={{ width: "100%" }}
-        >
-          {snackbar.message}
-        </Alert>
+        <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
       </Snackbar>
     </Box>
   );

@@ -25,10 +25,10 @@ import { useRouter } from "next/navigation";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 import dayjs from "dayjs";
-import "dayjs/locale/zh-hk";
+import "dayjs/locale/en";
 
 // Initialize dayjs locale
-dayjs.locale("zh-hk");
+dayjs.locale("en");
 
 interface Booking {
   id: string;
@@ -46,9 +46,14 @@ const statusColors: Record<string, "warning" | "info" | "success" | "error"> = {
 };
 
 const statusLabels: Record<string, string> = {
-  pending: "待確認",
-  confirmed: "已確認",
-  cancelled: "已取消",
+  pending: "Pending",
+  confirmed: "Confirmed",
+  cancelled: "Cancelled",
+};
+
+const nextStatus: Record<string, string> = {
+  pending: "confirmed",
+  confirmed: "cancelled",
 };
 
 export default function UserBookings() {
@@ -163,7 +168,7 @@ export default function UserBookings() {
         <h1
           style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "20px" }}
         >
-          我的訂座
+          My Bookings
         </h1>
         <div
           style={{
@@ -187,13 +192,13 @@ export default function UserBookings() {
         alignItems="center"
         mb={3}
       >
-        <Typography variant="h4">我的訂座</Typography>
+        <Typography variant="h4">My Bookings</Typography>
         <Button
           variant="contained"
           color="primary"
           onClick={() => setOpenDialog(true)}
         >
-          新增訂座
+          Add Booking
         </Button>
       </Stack>
 
@@ -201,12 +206,12 @@ export default function UserBookings() {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>日期</TableCell>
-              <TableCell>時間</TableCell>
-              <TableCell>人數</TableCell>
-              <TableCell>狀態</TableCell>
-              <TableCell>建立時間</TableCell>
-              <TableCell>操作</TableCell>
+              <TableCell>Date</TableCell>
+              <TableCell>Time</TableCell>
+              <TableCell>People</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Created At</TableCell>
+              <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -224,7 +229,7 @@ export default function UserBookings() {
                 </TableCell>
                 <TableCell>
                   {mounted
-                    ? new Date(booking.createdAt).toLocaleString("zh-HK")
+                    ? new Date(booking.createdAt).toLocaleString("en-US")
                     : booking.createdAt}
                 </TableCell>
                 <TableCell>
@@ -252,7 +257,7 @@ export default function UserBookings() {
                         color="error"
                         onClick={() => handleCancel(booking.id)}
                       >
-                        取消
+                        Cancel
                       </Button>
                     </Stack>
                   )}
@@ -265,42 +270,54 @@ export default function UserBookings() {
 
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
         <form onSubmit={handleSubmit}>
-          <DialogTitle>新增訂座</DialogTitle>
+          <DialogTitle>Make a Reservation</DialogTitle>
           <DialogContent>
-            <Stack spacing={3} sx={{ mt: 1 }}>
-              <DatePicker
-                label="日期"
-                value={formData.date}
-                onChange={(newValue) =>
-                  setFormData({ ...formData, date: newValue || dayjs() })
-                }
-                disablePast
-              />
-              <TimePicker
-                label="時間"
-                value={formData.time}
-                onChange={(newValue) =>
-                  setFormData({ ...formData, time: newValue || dayjs() })
-                }
-              />
-              <TextField
-                label="人數"
-                type="number"
-                value={formData.numberOfPeople}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    numberOfPeople: parseInt(e.target.value),
-                  })
-                }
-                inputProps={{ min: 1, max: 10 }}
-              />
-            </Stack>
+            <Box sx={{ pt: 2, minWidth: 300 }}>
+              <Stack spacing={3}>
+                <DatePicker
+                  label="Date"
+                  value={formData.date}
+                  onChange={(newValue) => {
+                    if (newValue) {
+                      setFormData((prev) => ({ ...prev, date: newValue }));
+                    }
+                  }}
+                  disablePast
+                  slotProps={{ textField: { fullWidth: true } }}
+                />
+                <TimePicker
+                  label="Time"
+                  value={formData.time}
+                  onChange={(newValue) => {
+                    if (newValue) {
+                      setFormData((prev) => ({ ...prev, time: newValue }));
+                    }
+                  }}
+                  slotProps={{ textField: { fullWidth: true } }}
+                />
+                <TextField
+                  label="Number of People"
+                  type="number"
+                  value={formData.numberOfPeople}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    if (value > 0) {
+                      setFormData((prev) => ({
+                        ...prev,
+                        numberOfPeople: value,
+                      }));
+                    }
+                  }}
+                  inputProps={{ min: 1, max: 20 }}
+                  fullWidth
+                />
+              </Stack>
+            </Box>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setOpenDialog(false)}>取消</Button>
+            <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
             <Button type="submit" variant="contained">
-              確認
+              Book
             </Button>
           </DialogActions>
         </form>

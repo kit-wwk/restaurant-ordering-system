@@ -64,18 +64,18 @@ export default function AddUserDialog({
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <form onSubmit={handleSubmit}>
-        <DialogTitle>新增用戶</DialogTitle>
+        <DialogTitle>Add User</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 2 }}>
             <TextField
-              label="名稱"
+              label="Name"
               value={formData.name}
               onChange={handleTextChange("name")}
               fullWidth
               required
             />
             <TextField
-              label="電郵"
+              label="Email"
               value={formData.email}
               onChange={handleTextChange("email")}
               fullWidth
@@ -83,7 +83,7 @@ export default function AddUserDialog({
               type="email"
             />
             <TextField
-              label="密碼"
+              label="Password"
               value={formData.password}
               onChange={handleTextChange("password")}
               fullWidth
@@ -91,19 +91,19 @@ export default function AddUserDialog({
               type="password"
             />
             <FormControl fullWidth required>
-              <InputLabel>角色</InputLabel>
+              <InputLabel>Role</InputLabel>
               <Select
                 value={formData.role}
-                label="角色"
+                label="Role"
                 onChange={handleSelectChange}
               >
-                <MenuItem value="ADMIN">管理員</MenuItem>
-                <MenuItem value="STAFF">職員</MenuItem>
-                <MenuItem value="CUSTOMER">客戶</MenuItem>
+                <MenuItem value="ADMIN">Administrator</MenuItem>
+                <MenuItem value="STAFF">Staff</MenuItem>
+                <MenuItem value="CUSTOMER">Customer</MenuItem>
               </Select>
             </FormControl>
             <TextField
-              label="電話"
+              label="Phone"
               value={formData.phone}
               onChange={handleTextChange("phone")}
               fullWidth
@@ -111,9 +111,9 @@ export default function AddUserDialog({
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose}>取消</Button>
+          <Button onClick={onClose}>Cancel</Button>
           <Button type="submit" variant="contained">
-            新增
+            Add
           </Button>
         </DialogActions>
       </form>

@@ -25,13 +25,21 @@ import {
 const drawerWidth = 280;
 
 const menuItems = [
-  { text: "總覽", path: "/admin", icon: <Dashboard /> },
-  { text: "菜單管理", path: "/admin/menu", icon: <Restaurant /> },
-  { text: "訂單管理", path: "/admin/orders", icon: <ShoppingCart /> },
-  { text: "訂座管理", path: "/admin/bookings", icon: <Event /> },
-  { text: "優惠管理", path: "/admin/promotions", icon: <LocalOffer /> },
-  { text: "用戶管理", path: "/admin/users", icon: <People /> },
-  { text: "餐廳設定", path: "/admin/restaurant", icon: <Settings /> },
+  { text: "Dashboard", path: "/admin", icon: <Dashboard /> },
+  { text: "Menu Management", path: "/admin/menu", icon: <Restaurant /> },
+  { text: "Order Management", path: "/admin/orders", icon: <ShoppingCart /> },
+  { text: "Booking Management", path: "/admin/bookings", icon: <Event /> },
+  {
+    text: "Promotion Management",
+    path: "/admin/promotions",
+    icon: <LocalOffer />,
+  },
+  { text: "User Management", path: "/admin/users", icon: <People /> },
+  {
+    text: "Restaurant Settings",
+    path: "/admin/restaurant",
+    icon: <Settings />,
+  },
 ];
 
 export default function AdminLayout({
