@@ -24,6 +24,14 @@ export async function GET(
             menuItem: true,
           },
         },
+        promotion: {
+          select: {
+            id: true,
+            discountPercentage: true,
+            description: true,
+            minimumOrder: true,
+          },
+        },
       },
     });
 

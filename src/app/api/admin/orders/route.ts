@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { OrderStatus, Prisma } from "@prisma/client";
 
 interface TransformedOrderItem {
   id: string;
@@ -15,10 +15,17 @@ interface TransformedOrder {
   customerName: string;
   items: TransformedOrderItem[];
   subtotal: number;
+  discount: number;
   total: number;
   status: string;
   createdAt: string;
   updatedAt: string;
+  promotion?: {
+    id: string;
+    discountPercentage: number;
+    description: string;
+    minimumOrder: number;
+  };
 }
 
 // GET /api/admin/orders - Get all orders with optional filters
@@ -33,19 +40,19 @@ export async function GET(request: Request) {
     const where: Prisma.OrderWhereInput = {};
 
     if (status) {
-      where.status = status.toUpperCase() as Prisma.OrderStatus;
+      where.status = status.toUpperCase();
     }
 
     if (startDate) {
       where.createdAt = {
-        ...where.createdAt,
+        ...(where.createdAt as any),
         gte: new Date(startDate),
       };
     }
 
     if (endDate) {
       where.createdAt = {
-        ...where.createdAt,
+        ...(where.createdAt as any),
         lte: new Date(endDate),
       };
     }
@@ -65,6 +72,7 @@ export async function GET(request: Request) {
             menuItem: true,
           },
         },
+        promotion: true,
       },
       orderBy: {
         createdAt: "desc",
@@ -82,11 +90,20 @@ export async function GET(request: Request) {
         price: Number(item.price),
         quantity: item.quantity,
       })),
-      subtotal: Number(order.total),
+      subtotal: Number(order.subtotal),
+      discount: Number(order.discount),
       total: Number(order.total),
       status: order.status.toLowerCase(),
       createdAt: order.createdAt.toISOString(),
       updatedAt: order.updatedAt.toISOString(),
+      promotion: order.promotion
+        ? {
+            id: order.promotion.id,
+            discountPercentage: order.promotion.discountPercentage,
+            description: order.promotion.description,
+            minimumOrder: Number(order.promotion.minimumOrder),
+          }
+        : undefined,
     }));
 
     return NextResponse.json(transformedOrders);
@@ -110,7 +127,7 @@ export async function PUT(request: Request) {
         id: orderId,
       },
       data: {
-        status: status.toUpperCase() as Prisma.OrderStatus,
+        status: status.toUpperCase(),
       },
       include: {
         user: {
@@ -125,6 +142,7 @@ export async function PUT(request: Request) {
             menuItem: true,
           },
         },
+        promotion: true,
       },
     });
 
@@ -140,11 +158,20 @@ export async function PUT(request: Request) {
         price: Number(item.price),
         quantity: item.quantity,
       })),
-      subtotal: Number(updatedOrder.total),
+      subtotal: Number(updatedOrder.subtotal),
+      discount: Number(updatedOrder.discount),
       total: Number(updatedOrder.total),
       status: updatedOrder.status.toLowerCase(),
       createdAt: updatedOrder.createdAt.toISOString(),
       updatedAt: updatedOrder.updatedAt.toISOString(),
+      promotion: updatedOrder.promotion
+        ? {
+            id: updatedOrder.promotion.id,
+            discountPercentage: updatedOrder.promotion.discountPercentage,
+            description: updatedOrder.promotion.description,
+            minimumOrder: Number(updatedOrder.promotion.minimumOrder),
+          }
+        : undefined,
     };
 
     return NextResponse.json(transformedOrder);
