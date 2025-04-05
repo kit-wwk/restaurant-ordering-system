@@ -215,18 +215,18 @@ export function RestaurantProfileForm() {
           {/* Basic Information */}
           <Box>
             <Typography variant="h6" gutterBottom>
-              基本資料
+              Basic Information
             </Typography>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
               <Box sx={{ width: { xs: "100%", sm: "calc(50% - 12px)" } }}>
                 <Controller
                   name="name"
                   control={control}
-                  rules={{ required: "餐廳名稱為必填" }}
+                  rules={{ required: "Restaurant name is required" }}
                   render={({ field, fieldState }: FieldProps) => (
                     <SafeTextField
                       field={field}
-                      label="餐廳名稱"
+                      label="Restaurant Name"
                       fullWidth
                       error={!!fieldState.error}
                       helperText={fieldState.error?.message}
@@ -241,7 +241,7 @@ export function RestaurantProfileForm() {
                   render={({ field }: FieldProps) => (
                     <SafeTextField
                       field={field}
-                      label="營業執照號碼"
+                      label="Business License Number"
                       fullWidth
                     />
                   )}
@@ -254,7 +254,7 @@ export function RestaurantProfileForm() {
                   render={({ field }: FieldProps) => (
                     <SafeTextField
                       field={field}
-                      label="餐廳簡介"
+                      label="Restaurant Description"
                       fullWidth
                       multiline
                       rows={4}
@@ -270,18 +270,18 @@ export function RestaurantProfileForm() {
           {/* Contact Information */}
           <Box>
             <Typography variant="h6" gutterBottom>
-              聯絡資料
+              Contact Information
             </Typography>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
               <Box sx={{ width: { xs: "100%", sm: "calc(50% - 12px)" } }}>
                 <Controller
                   name="phone"
                   control={control}
-                  rules={{ required: "聯絡電話為必填" }}
+                  rules={{ required: "Phone number is required" }}
                   render={({ field, fieldState }: FieldProps) => (
                     <SafeTextField
                       field={field}
-                      label="聯絡電話"
+                      label="Phone Number"
                       fullWidth
                       error={!!fieldState.error}
                       helperText={fieldState.error?.message}
@@ -296,7 +296,7 @@ export function RestaurantProfileForm() {
                   render={({ field }: FieldProps) => (
                     <SafeTextField
                       field={field}
-                      label="電郵"
+                      label="Email"
                       fullWidth
                       type="email"
                     />
@@ -307,11 +307,11 @@ export function RestaurantProfileForm() {
                 <Controller
                   name="address"
                   control={control}
-                  rules={{ required: "地址為必填" }}
+                  rules={{ required: "Address is required" }}
                   render={({ field, fieldState }: FieldProps) => (
                     <SafeTextField
                       field={field}
-                      label="地址"
+                      label="Address"
                       fullWidth
                       error={!!fieldState.error}
                       helperText={fieldState.error?.message}
@@ -327,7 +327,7 @@ export function RestaurantProfileForm() {
           {/* Business Settings */}
           <Box>
             <Typography variant="h6" gutterBottom>
-              營業設定
+              Business Settings
             </Typography>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
               <Box sx={{ width: { xs: "100%", sm: "calc(50% - 12px)" } }}>
@@ -335,7 +335,7 @@ export function RestaurantProfileForm() {
                   name="currency"
                   control={control}
                   render={({ field }: FieldProps) => (
-                    <SafeTextField field={field} label="貨幣" fullWidth />
+                    <SafeTextField field={field} label="Currency" fullWidth />
                   )}
                 />
               </Box>
@@ -346,7 +346,7 @@ export function RestaurantProfileForm() {
                   render={({ field }: FieldProps) => (
                     <SafeTextField
                       field={field}
-                      label="稅率 (%)"
+                      label="Tax Rate (%)"
                       fullWidth
                       type="number"
                       inputProps={{ min: 0, max: 100, step: 0.1 }}
@@ -361,7 +361,7 @@ export function RestaurantProfileForm() {
                   render={({ field }: FieldProps) => (
                     <SafeTextField
                       field={field}
-                      label="服務費 (%)"
+                      label="Service Charge (%)"
                       fullWidth
                       type="number"
                       inputProps={{ min: 0, max: 100, step: 0.1 }}
@@ -377,7 +377,7 @@ export function RestaurantProfileForm() {
           {/* Booking Settings */}
           <Box>
             <Typography variant="h6" gutterBottom>
-              訂位設定
+              Booking Settings
             </Typography>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
               <Box sx={{ width: { xs: "100%", sm: "calc(50% - 12px)" } }}>
@@ -387,7 +387,7 @@ export function RestaurantProfileForm() {
                   render={({ field }: FieldProps) => (
                     <SafeTextField
                       field={field}
-                      label="最長預訂天數"
+                      label="Max Booking Days"
                       fullWidth
                       type="number"
                       inputProps={{ min: 1 }}
@@ -402,7 +402,7 @@ export function RestaurantProfileForm() {
                   render={({ field }: FieldProps) => (
                     <SafeTextField
                       field={field}
-                      label="每時段最大預訂數"
+                      label="Max Bookings Per Slot"
                       fullWidth
                       type="number"
                       inputProps={{ min: 1 }}
@@ -417,7 +417,7 @@ export function RestaurantProfileForm() {
                   render={({ field }: FieldProps) => (
                     <SafeTextField
                       field={field}
-                      label="最大餐枱人數"
+                      label="Max Table Size"
                       fullWidth
                       type="number"
                       inputProps={{ min: 1 }}
@@ -433,7 +433,7 @@ export function RestaurantProfileForm() {
           {/* Opening Hours */}
           <Box>
             <Typography variant="h6" gutterBottom>
-              營業時間
+              Opening Hours
             </Typography>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
               {[
@@ -461,13 +461,13 @@ export function RestaurantProfileForm() {
                     render={({ field }: OpeningHourFieldProps) => (
                       <SafeTextField
                         field={field}
-                        label="開始時間"
+                        label="Open"
                         type="time"
                         InputLabelProps={{ shrink: true }}
                       />
                     )}
                   />
-                  <Typography>至</Typography>
+                  <Typography>to</Typography>
                   <Controller
                     name={`openingHours.${day}.close` as const}
                     control={control}
@@ -475,7 +475,7 @@ export function RestaurantProfileForm() {
                     render={({ field }: OpeningHourFieldProps) => (
                       <SafeTextField
                         field={field}
-                        label="結束時間"
+                        label="Close"
                         type="time"
                         InputLabelProps={{ shrink: true }}
                       />
@@ -491,7 +491,7 @@ export function RestaurantProfileForm() {
           {/* Social Media and Links */}
           <Box>
             <Typography variant="h6" gutterBottom>
-              社交媒體及連結
+              Social Media and Links
             </Typography>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
               <Box sx={{ width: { xs: "100%", sm: "calc(50% - 12px)" } }}>
@@ -499,7 +499,7 @@ export function RestaurantProfileForm() {
                   name="website"
                   control={control}
                   render={({ field }: FieldProps) => (
-                    <SafeTextField field={field} label="網站" fullWidth />
+                    <SafeTextField field={field} label="Website" fullWidth />
                   )}
                 />
               </Box>
@@ -529,7 +529,7 @@ export function RestaurantProfileForm() {
           {/* Images */}
           <Box>
             <Typography variant="h6" gutterBottom>
-              圖片
+              Images
             </Typography>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
               <Box sx={{ width: { xs: "100%", sm: "calc(50% - 12px)" } }}>
@@ -558,7 +558,7 @@ export function RestaurantProfileForm() {
           {/* SEO */}
           <Box>
             <Typography variant="h6" gutterBottom>
-              SEO 設定
+              SEO Settings
             </Typography>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
               <Box sx={{ width: { xs: "100%", sm: "calc(50% - 12px)" } }}>
@@ -596,14 +596,14 @@ export function RestaurantProfileForm() {
               disabled={loading}
               sx={{ minWidth: 120 }}
             >
-              {loading ? <CircularProgress size={24} /> : "儲存"}
+              {loading ? <CircularProgress size={24} /> : "Save"}
             </Button>
           </Box>
 
           {/* Success/Error Messages */}
           {success && (
             <Alert severity="success" onClose={() => setSuccess(false)}>
-              餐廳資料已成功更新
+              Restaurant profile updated successfully
             </Alert>
           )}
           {error && (
