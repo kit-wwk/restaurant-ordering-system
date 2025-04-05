@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useReducer, ReactNode } from "react";
-import type { MenuItem } from "@/types/restaurant";
+import type { MenuItem, Promotion } from "@/types/restaurant";
 
 export interface CartItem {
   id: string;
@@ -13,23 +13,52 @@ export interface CartItem {
 interface CartState {
   items: CartItem[];
   subtotal: number;
+  appliedPromotion: Promotion | null;
+  discount: number;
   total: number;
+  availablePromotions: Promotion[];
 }
 
 type CartAction =
   | { type: "ADD_ITEM"; payload: MenuItem }
   | { type: "REMOVE_ITEM"; payload: string }
   | { type: "UPDATE_QUANTITY"; payload: { id: string; quantity: number } }
+  | { type: "UPDATE_PROMOTIONS"; payload: Promotion[] }
   | { type: "CLEAR_CART" };
 
-const calculateTotals = (items: CartItem[]) => {
+const findBestPromotion = (
+  subtotal: number,
+  promotions: Promotion[]
+): Promotion | null => {
+  // Filter promotions that meet minimum order
+  const applicablePromotions = promotions.filter(
+    (promo) => subtotal >= promo.minimumOrder
+  );
+
+  if (applicablePromotions.length === 0) {
+    return null;
+  }
+
+  // Return the promotion with highest discount
+  return applicablePromotions.reduce((best, current) =>
+    current.discountPercentage > best.discountPercentage ? current : best
+  );
+};
+
+const calculateTotals = (items: CartItem[], promotions: Promotion[] = []) => {
   const subtotal = items.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
-  // You could add delivery fee, service charge, etc. here
-  const total = subtotal;
-  return { subtotal, total };
+
+  const bestPromotion = findBestPromotion(subtotal, promotions);
+  const discount = bestPromotion
+    ? (subtotal * bestPromotion.discountPercentage) / 100
+    : 0;
+
+  const total = subtotal - discount;
+
+  return { subtotal, appliedPromotion: bestPromotion, discount, total };
 };
 
 const cartReducer = (state: CartState, action: CartAction): CartState => {
@@ -53,7 +82,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       return {
         ...state,
         items: newItems,
-        ...calculateTotals(newItems),
+        ...calculateTotals(newItems, state.availablePromotions),
       };
     }
 
@@ -62,7 +91,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       return {
         ...state,
         items: newItems,
-        ...calculateTotals(newItems),
+        ...calculateTotals(newItems, state.availablePromotions),
       };
     }
 
@@ -75,7 +104,15 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       return {
         ...state,
         items: newItems,
-        ...calculateTotals(newItems),
+        ...calculateTotals(newItems, state.availablePromotions),
+      };
+    }
+
+    case "UPDATE_PROMOTIONS": {
+      return {
+        ...state,
+        availablePromotions: action.payload,
+        ...calculateTotals(state.items, action.payload),
       };
     }
 
@@ -83,7 +120,10 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       return {
         items: [],
         subtotal: 0,
+        appliedPromotion: null,
+        discount: 0,
         total: 0,
+        availablePromotions: state.availablePromotions,
       };
 
     default:
@@ -94,7 +134,10 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 const initialState: CartState = {
   items: [],
   subtotal: 0,
+  appliedPromotion: null,
+  discount: 0,
   total: 0,
+  availablePromotions: [],
 };
 
 const CartContext = createContext<{

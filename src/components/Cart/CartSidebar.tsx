@@ -19,7 +19,7 @@ import {
 } from "@mui/icons-material";
 import { useCart } from "@/contexts/CartContext";
 import { formatPrice } from "@/utils/format";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSnackbar } from "notistack";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -33,6 +33,24 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
   const { state: authState } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
+
+  useEffect(() => {
+    const fetchPromotions = async () => {
+      try {
+        const res = await fetch("/api/admin/restaurant-profile");
+        const data = await res.json();
+        if (data.promotions) {
+          dispatch({ type: "UPDATE_PROMOTIONS", payload: data.promotions });
+        }
+      } catch (error) {
+        console.error("Error fetching promotions:", error);
+      }
+    };
+
+    if (open) {
+      fetchPromotions();
+    }
+  }, [open, dispatch]);
 
   const handleUpdateQuantity = (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) {
@@ -75,6 +93,10 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
         body: JSON.stringify({
           userId: authState.user.id,
           items: formattedItems,
+          promotionId: state.appliedPromotion?.id,
+          subtotal: state.subtotal,
+          discount: state.discount,
+          total: state.total,
         }),
       });
 
@@ -172,6 +194,21 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
                   <Typography>小計</Typography>
                   <Typography>HK$ {formatPrice(state.subtotal)}</Typography>
                 </Box>
+                {state.appliedPromotion && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      mb: 1,
+                      color: "success.main",
+                    }}
+                  >
+                    <Typography>
+                      折扣 ({state.appliedPromotion.discountPercentage}% off)
+                    </Typography>
+                    <Typography>- HK$ {formatPrice(state.discount)}</Typography>
+                  </Box>
+                )}
                 <Box
                   sx={{
                     display: "flex",
@@ -184,6 +221,45 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
                     HK$ {formatPrice(state.total)}
                   </Typography>
                 </Box>
+                {state.appliedPromotion ? (
+                  <Typography
+                    variant="body2"
+                    color="success.main"
+                    sx={{ mb: 2, textAlign: "right" }}
+                  >
+                    已套用最高折扣: {state.appliedPromotion.description}
+                  </Typography>
+                ) : (
+                  state.availablePromotions.length > 0 && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        gutterBottom
+                      >
+                        可用優惠:
+                      </Typography>
+                      {state.availablePromotions.map((promo) => (
+                        <Typography
+                          key={promo.id}
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
+                          <span>{promo.description}</span>
+                          <span>
+                            (消費滿 HK$ {formatPrice(promo.minimumOrder)} 可享{" "}
+                            {promo.discountPercentage}% 折扣)
+                          </span>
+                        </Typography>
+                      ))}
+                    </Box>
+                  )
+                )}
                 <Button
                   variant="contained"
                   color="primary"
