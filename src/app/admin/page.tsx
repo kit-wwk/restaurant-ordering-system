@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import {
-  Grid,
   Paper,
   Typography,
   Box,
@@ -28,7 +27,7 @@ interface DashboardStats {
     id: string;
     customerName: string;
     total: number;
-    status: "pending" | "completed" | "cancelled";
+    status: string;
     createdAt: string;
   }>;
   recentBookings: Array<{
@@ -37,16 +36,33 @@ interface DashboardStats {
     date: string;
     time: string;
     numberOfPeople: number;
-    status: "pending" | "confirmed" | "cancelled";
+    status: string;
   }>;
 }
 
-const statusColors = {
+const statusColors: Record<string, "warning" | "info" | "success" | "error"> = {
   pending: "warning",
-  completed: "success",
   confirmed: "success",
+  preparing: "info",
+  ready: "success",
+  completed: "success",
   cancelled: "error",
-} as const;
+};
+
+const orderStatusLabels: Record<string, string> = {
+  pending: "待處理",
+  confirmed: "已確認",
+  preparing: "準備中",
+  ready: "可取餐",
+  completed: "已完成",
+  cancelled: "已取消",
+};
+
+const bookingStatusLabels: Record<string, string> = {
+  pending: "待確認",
+  confirmed: "已確認",
+  cancelled: "已取消",
+};
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -74,9 +90,19 @@ export default function AdminDashboard() {
       <Typography variant="h4" sx={{ mb: 3 }}>
         總覽
       </Typography>
-      <Grid container spacing={3}>
-        {/* Statistics Cards */}
-        <Grid item xs={12} sm={6} md={3}>
+      <Box sx={{ display: "grid", gap: 3 }}>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: {
+              xs: "1fr",
+              sm: "1fr 1fr",
+              md: "repeat(4, 1fr)",
+            },
+            gap: 3,
+          }}
+        >
+          {/* Statistics Cards */}
           <Card>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
@@ -86,8 +112,7 @@ export default function AdminDashboard() {
               <Typography variant="h4">{stats.totalOrders}</Typography>
             </CardContent>
           </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+
           <Card>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
@@ -99,8 +124,7 @@ export default function AdminDashboard() {
               </Typography>
             </CardContent>
           </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+
           <Card>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
@@ -110,8 +134,7 @@ export default function AdminDashboard() {
               <Typography variant="h4">{stats.totalBookings}</Typography>
             </CardContent>
           </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+
           <Card>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
@@ -121,15 +144,28 @@ export default function AdminDashboard() {
               <Typography variant="h4">{stats.totalUsers}</Typography>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
-        {/* Recent Orders */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2 }}>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" },
+            gap: 3,
+          }}
+        >
+          {/* Recent Orders */}
+          <Paper
+            sx={{
+              p: 2,
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
             <Typography variant="h6" gutterBottom>
               最近訂單
             </Typography>
-            <TableContainer>
+            <TableContainer sx={{ flex: 1 }}>
               <Table>
                 <TableHead>
                   <TableRow>
@@ -146,13 +182,7 @@ export default function AdminDashboard() {
                       <TableCell>HK$ {formatPrice(order.total)}</TableCell>
                       <TableCell>
                         <Chip
-                          label={
-                            order.status === "completed"
-                              ? "已完成"
-                              : order.status === "pending"
-                              ? "處理中"
-                              : "已取消"
-                          }
+                          label={orderStatusLabels[order.status]}
                           color={statusColors[order.status]}
                           size="small"
                         />
@@ -166,15 +196,20 @@ export default function AdminDashboard() {
               </Table>
             </TableContainer>
           </Paper>
-        </Grid>
 
-        {/* Recent Bookings */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2 }}>
+          {/* Recent Bookings */}
+          <Paper
+            sx={{
+              p: 2,
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
             <Typography variant="h6" gutterBottom>
               最近訂座
             </Typography>
-            <TableContainer>
+            <TableContainer sx={{ flex: 1 }}>
               <Table>
                 <TableHead>
                   <TableRow>
@@ -194,13 +229,7 @@ export default function AdminDashboard() {
                       <TableCell>{booking.numberOfPeople}</TableCell>
                       <TableCell>
                         <Chip
-                          label={
-                            booking.status === "confirmed"
-                              ? "已確認"
-                              : booking.status === "pending"
-                              ? "待確認"
-                              : "已取消"
-                          }
+                          label={bookingStatusLabels[booking.status]}
                           color={statusColors[booking.status]}
                           size="small"
                         />
@@ -211,8 +240,8 @@ export default function AdminDashboard() {
               </Table>
             </TableContainer>
           </Paper>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
     </Box>
   );
 }
