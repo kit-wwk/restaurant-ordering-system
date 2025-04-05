@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import type { Booking as PrismaBooking } from "@prisma/client";
 
 export interface AdminBooking {
   id: string;
@@ -9,75 +8,59 @@ export interface AdminBooking {
   date: string;
   time: string;
   numberOfPeople: number;
-  status: "confirmed" | "pending" | "cancelled";
+  notes: string;
+  status: "CONFIRMED" | "PENDING" | "CANCELLED";
+  isGuest: boolean;
 }
 
 export async function GET(request: Request) {
   try {
-    console.log("Fetching bookings from database...");
-
-    // Get date range from URL parameters
+    // Get pagination parameters from URL
     const { searchParams } = new URL(request.url);
-    const startDate = searchParams.get("startDate");
-    const endDate = searchParams.get("endDate");
+    const page = parseInt(searchParams.get("page") || "1");
+    const pageSize = 10;
+    const skip = (page - 1) * pageSize;
 
-    console.log("Date range params:", { startDate, endDate });
+    // Get total count for pagination
+    const totalCount = await prisma.booking.count();
 
-    // Build the where clause for date filtering
-    const where = {
-      ...(startDate && endDate
-        ? {
-            date: {
-              gte: new Date(startDate),
-              lte: new Date(endDate),
-            },
-          }
-        : {}),
-    };
-
+    // Get paginated bookings
     const bookings = await prisma.booking.findMany({
-      where,
       include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-          },
-        },
+        user: true,
       },
       orderBy: {
         date: "asc",
       },
+      skip,
+      take: pageSize,
     });
 
-    console.log("Found bookings:", bookings);
+    const formattedBookings = bookings.map((booking) => {
+      return {
+        id: booking.id,
+        customerName: booking.user ? booking.user.name : booking.guestName,
+        phoneNumber: booking.user
+          ? booking.user.phone
+          : booking.guestPhone || "",
+        date: booking.date.toISOString().split("T")[0],
+        time: booking.time.toISOString().split("T")[1].substring(0, 5),
+        numberOfPeople: booking.guests,
+        notes: booking.notes || "",
+        status: booking.status,
+        isGuest: !booking.user,
+      };
+    });
 
-    // Transform the data to match the expected format
-    const formattedBookings = bookings.map(
-      (
-        booking: PrismaBooking & {
-          user: { name: string; phone: string | null };
-        }
-      ) => {
-        console.log("Processing booking:", booking);
-        return {
-          id: booking.id,
-          customerName: booking.user.name,
-          phoneNumber: booking.user.phone || "",
-          date: booking.date.toISOString().split("T")[0],
-          time: booking.time.toISOString().split("T")[1].substring(0, 5),
-          numberOfPeople: booking.guests,
-          status: booking.status.toLowerCase() as
-            | "confirmed"
-            | "pending"
-            | "cancelled",
-        };
-      }
-    );
-
-    console.log("Formatted bookings:", formattedBookings);
-    return NextResponse.json(formattedBookings);
+    return NextResponse.json({
+      bookings: formattedBookings,
+      pagination: {
+        total: totalCount,
+        pageSize,
+        currentPage: page,
+        totalPages: Math.ceil(totalCount / pageSize),
+      },
+    });
   } catch (error) {
     console.error("Error fetching bookings:", error);
     return NextResponse.json(
@@ -141,10 +124,20 @@ export async function PATCH(request: Request) {
       );
     }
 
+    // Validate status value
+    const validStatuses = ["CONFIRMED", "PENDING", "CANCELLED"];
+    const normalizedStatus = status.toUpperCase();
+    if (!validStatuses.includes(normalizedStatus)) {
+      return NextResponse.json(
+        { error: "Invalid status value" },
+        { status: 400 }
+      );
+    }
+
     const booking = await prisma.booking.update({
       where: { id },
       data: {
-        status: status.toUpperCase(),
+        status: normalizedStatus,
       },
       include: {
         user: {

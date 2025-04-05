@@ -11,7 +11,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Chip,
   Button,
   Dialog,
   DialogTitle,
@@ -19,6 +18,7 @@ import {
   DialogActions,
   TextField,
   Stack,
+  Chip,
 } from "@mui/material";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
@@ -35,21 +35,21 @@ interface Booking {
   date: string;
   time: string;
   numberOfPeople: number;
-  status: "pending" | "confirmed" | "cancelled";
+  status: string;
   createdAt: string;
 }
 
-const statusLabels = {
+const statusColors: Record<string, "warning" | "info" | "success" | "error"> = {
+  pending: "warning",
+  confirmed: "success",
+  cancelled: "error",
+};
+
+const statusLabels: Record<string, string> = {
   pending: "待確認",
   confirmed: "已確認",
   cancelled: "已取消",
 };
-
-const statusColors = {
-  pending: "warning",
-  confirmed: "success",
-  cancelled: "error",
-} as const;
 
 export default function UserBookings() {
   const [mounted, setMounted] = useState(false);
@@ -124,7 +124,7 @@ export default function UserBookings() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ status: "cancelled" }),
+        body: JSON.stringify({ status: "CANCELLED" }),
       });
 
       if (response.ok) {
@@ -135,12 +135,48 @@ export default function UserBookings() {
     }
   };
 
+  const handleStatusChange = async (bookingId: string, newStatus: string) => {
+    try {
+      const response = await fetch(`/api/bookings/${bookingId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: newStatus.toUpperCase() }),
+      });
+
+      if (response.ok) {
+        fetchBookings();
+      }
+    } catch (error) {
+      console.error("Error updating booking status:", error);
+    }
+  };
+
   if (!mounted) {
     return null;
   }
 
   if (loading) {
-    return <Typography>載入中...</Typography>;
+    return (
+      <div style={{ padding: "40px" }}>
+        <h1
+          style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "20px" }}
+        >
+          我的訂座
+        </h1>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: "400px",
+          }}
+        >
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -181,8 +217,8 @@ export default function UserBookings() {
                 <TableCell>{booking.numberOfPeople}</TableCell>
                 <TableCell>
                   <Chip
-                    label={statusLabels[booking.status]}
-                    color={statusColors[booking.status]}
+                    label={statusLabels[booking.status.toLowerCase()]}
+                    color={statusColors[booking.status.toLowerCase()]}
                     size="small"
                   />
                 </TableCell>
@@ -192,14 +228,33 @@ export default function UserBookings() {
                     : booking.createdAt}
                 </TableCell>
                 <TableCell>
-                  {booking.status !== "cancelled" && (
-                    <Button
-                      size="small"
-                      color="error"
-                      onClick={() => handleCancel(booking.id)}
-                    >
-                      取消
-                    </Button>
+                  {booking.status.toLowerCase() !== "cancelled" && (
+                    <Stack direction="row" spacing={1}>
+                      {booking.status.toLowerCase() === "pending" && (
+                        <Button
+                          variant="contained"
+                          size="small"
+                          color={
+                            statusColors[
+                              nextStatus[booking.status.toLowerCase()]
+                            ]
+                          }
+                          onClick={() =>
+                            handleStatusChange(booking.id, "confirmed")
+                          }
+                        >
+                          {statusLabels["confirmed"]}
+                        </Button>
+                      )}
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        color="error"
+                        onClick={() => handleCancel(booking.id)}
+                      >
+                        取消
+                      </Button>
+                    </Stack>
                   )}
                 </TableCell>
               </TableRow>

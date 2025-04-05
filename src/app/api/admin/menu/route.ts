@@ -1,51 +1,30 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import type { Category } from "@/types/restaurant";
 
 // GET /api/admin/menu - Get all menu items
 export async function GET() {
   try {
-    const menuItems = await prisma.menuItem.findMany({
+    const categories = await prisma.category.findMany({
+      include: {
+        items: true,
+      },
       orderBy: {
-        category: "asc",
+        name: "asc",
       },
     });
 
-    // Group menu items by category
-    type MenuItem = (typeof menuItems)[number];
-    const categories = menuItems.reduce((acc: Category[], item: MenuItem) => {
-      const category = acc.find((c: Category) => c.name === item.category);
-      if (category) {
-        category.items.push({
-          id: item.id,
-          name: item.name,
-          description: item.description || "",
-          price: Number(item.price),
-          image: item.image || "",
-          category: item.category,
-          isAvailable: item.isAvailable,
-        });
-      } else {
-        acc.push({
-          id: `cat-${acc.length + 1}`,
-          name: item.category,
-          items: [
-            {
-              id: item.id,
-              name: item.name,
-              description: item.description || "",
-              price: Number(item.price),
-              image: item.image || "",
-              category: item.category,
-              isAvailable: item.isAvailable,
-            },
-          ],
-        });
-      }
-      return acc;
-    }, []);
+    // Transform the data to match frontend expectations
+    const transformedCategories = categories.map((category) => ({
+      ...category,
+      items: category.items.map((item) => ({
+        ...item,
+        price: Number(item.price),
+        image: item.imageUrl || "/images/default-menu-item.jpg",
+        category: category.name,
+      })),
+    }));
 
-    return NextResponse.json(categories);
+    return NextResponse.json(transformedCategories);
   } catch (error) {
     console.error("Error fetching menu:", error);
     return NextResponse.json(
@@ -59,15 +38,15 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { item } = body;
+    const { categoryId, item } = body;
 
     const newItem = await prisma.menuItem.create({
       data: {
         name: item.name,
         description: item.description,
         price: item.price,
-        category: item.category,
-        image: item.image,
+        categoryId: categoryId,
+        imageUrl: item.image,
         isAvailable: true,
       },
     });
@@ -86,7 +65,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { item } = body;
+    const { categoryId, item } = body;
 
     const updatedItem = await prisma.menuItem.update({
       where: {
@@ -96,8 +75,8 @@ export async function PUT(request: Request) {
         name: item.name,
         description: item.description,
         price: item.price,
-        category: item.category,
-        image: item.image,
+        categoryId: categoryId,
+        imageUrl: item.image,
         isAvailable: item.isAvailable,
       },
     });

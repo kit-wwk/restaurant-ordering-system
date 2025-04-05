@@ -14,6 +14,7 @@ export interface Category {
   id: string;
   name: string;
   items: MenuItem[];
+  restaurantId: string;
 }
 
 export interface MenuItem {
@@ -21,9 +22,10 @@ export interface MenuItem {
   name: string;
   description: string;
   price: number;
-  image: string;
+  imageUrl: string;
   category: string;
   isAvailable: boolean;
+  categoryId: string;
 }
 
 export interface OperatingHours {
@@ -37,4 +39,5 @@ export interface Promotion {
   minimumOrder: number;
   description: string;
   isAutoApplied: boolean;
+  restaurantId: string;
 }

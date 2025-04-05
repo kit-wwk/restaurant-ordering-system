@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { Prisma } from "@prisma/client";
 
 // GET /api/orders - Get all orders (admin)
 export async function GET() {
@@ -16,7 +17,22 @@ export async function GET() {
         },
         items: {
           include: {
-            menuItem: true,
+            menuItem: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                price: true,
+              },
+            },
+          },
+        },
+        promotion: {
+          select: {
+            id: true,
+            discountPercentage: true,
+            description: true,
+            minimumOrder: true,
           },
         },
       },
@@ -39,12 +55,26 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { userId, items, guestName, guestEmail, guestPhone } = body;
+    const {
+      userId,
+      items,
+      guestName,
+      guestEmail,
+      guestPhone,
+      promotionId,
+      subtotal,
+      discount,
+      total,
+    } = body;
 
     console.log("Received order request:", {
       userId,
       guestInfo: { guestName, guestEmail, guestPhone },
       itemsCount: items?.length,
+      promotionId,
+      subtotal,
+      discount,
+      total,
     });
 
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -99,12 +129,45 @@ export async function POST(request: Request) {
       }
     }
 
-    // Calculate total price
-    let total = 0;
+    // If promotionId is provided, verify it exists
+    if (promotionId) {
+      const promotion = await prisma.promotion.findUnique({
+        where: { id: promotionId },
+      });
+
+      if (!promotion) {
+        console.error("Promotion not found:", promotionId);
+        return NextResponse.json(
+          { error: "Promotion not found" },
+          { status: 404 }
+        );
+      }
+
+      // Verify promotion is valid (meets minimum order)
+      if (subtotal < promotion.minimumOrder) {
+        return NextResponse.json(
+          { error: "Order does not meet promotion minimum order requirement" },
+          { status: 400 }
+        );
+      }
+
+      // Verify discount calculation
+      const expectedDiscount =
+        (Number(subtotal) * promotion.discountPercentage) / 100;
+      if (Math.abs(Number(discount) - expectedDiscount) > 0.01) {
+        return NextResponse.json(
+          { error: "Invalid discount calculation" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Calculate total price from items for verification
+    let calculatedTotal = 0;
     const orderItems = items.map(
       (item: { menuItemId: string; quantity: number; price: number }) => {
         const itemTotal = Number(item.quantity) * Number(item.price);
-        total += itemTotal;
+        calculatedTotal += itemTotal;
         return {
           menuItemId: item.menuItemId,
           quantity: item.quantity,
@@ -113,20 +176,47 @@ export async function POST(request: Request) {
       }
     );
 
+    // Verify the provided subtotal matches calculated total
+    if (Math.abs(Number(subtotal) - calculatedTotal) > 0.01) {
+      return NextResponse.json(
+        { error: "Invalid subtotal calculation" },
+        { status: 400 }
+      );
+    }
+
+    // Verify final total
+    const expectedTotal = Number(subtotal) - Number(discount);
+    if (Math.abs(Number(total) - expectedTotal) > 0.01) {
+      return NextResponse.json(
+        { error: "Invalid total calculation" },
+        { status: 400 }
+      );
+    }
+
     console.log("Creating order:", {
       userId,
       guestInfo: userId ? null : { guestName, guestEmail, guestPhone },
+      subtotal,
+      discount,
       total,
+      promotionId,
       itemsCount: orderItems.length,
     });
 
     const order = await prisma.order.create({
       data: {
-        userId,
-        guestName: !userId ? guestName : undefined,
-        guestEmail: !userId ? guestEmail : undefined,
-        guestPhone: !userId ? guestPhone : undefined,
+        ...(userId ? { userId } : {}),
+        ...(userId
+          ? {}
+          : {
+              guestName,
+              guestEmail,
+              guestPhone,
+            }),
+        subtotal,
+        discount,
         total,
+        promotionId,
         status: "PENDING",
         items: {
           create: orderItems,
@@ -145,6 +235,7 @@ export async function POST(request: Request) {
             menuItem: true,
           },
         },
+        promotion: true,
       },
     });
 

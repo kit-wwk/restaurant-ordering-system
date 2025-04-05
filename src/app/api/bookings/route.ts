@@ -39,7 +39,7 @@ export async function POST(request: Request) {
       userId,
       date,
       time,
-      guests,
+      numberOfPeople,
       notes,
       guestName,
       guestEmail,
@@ -47,10 +47,11 @@ export async function POST(request: Request) {
     } = body;
 
     // Validate required fields
-    if (!date || !time || !guests) {
+    if (!date || !time || !numberOfPeople) {
       return NextResponse.json(
         {
-          error: "Missing required fields: date, time, and guests are required",
+          error:
+            "Missing required fields: date, time, and number of people are required",
         },
         { status: 400 }
       );
@@ -58,9 +59,17 @@ export async function POST(request: Request) {
 
     // If no userId is provided, validate guest information
     if (!userId) {
-      if (!guestName || !guestEmail || !guestPhone) {
+      if (!guestName || !guestPhone) {
         return NextResponse.json(
-          { error: "Guest bookings require name, email, and phone number." },
+          { error: "訪客預訂需要提供姓名和電話" },
+          { status: 400 }
+        );
+      }
+
+      // Validate phone number format
+      if (!/^[0-9]{8}$/.test(guestPhone)) {
+        return NextResponse.json(
+          { error: "請輸入有效的8位電話號碼" },
           { status: 400 }
         );
       }
@@ -77,22 +86,33 @@ export async function POST(request: Request) {
       }
     }
 
-    // Validate guests number
-    if (guests < 1 || guests > 20) {
+    // Validate number of people
+    if (numberOfPeople < 1 || numberOfPeople > 10) {
       return NextResponse.json(
-        { error: "Number of guests must be between 1 and 20" },
+        { error: "人數必須在1至10人之間" },
         { status: 400 }
       );
     }
 
     // Convert date and time strings to Date objects
     const bookingDate = new Date(date);
-    const bookingTime = new Date(time);
+    // Parse time string (HH:mm) into hours and minutes
+    const [hours, minutes] = time.split(":").map(Number);
 
-    // Validate date is not in the past
-    if (bookingDate < new Date()) {
+    // Combine date and time for comparison
+    const bookingDateTime = new Date(
+      bookingDate.getFullYear(),
+      bookingDate.getMonth(),
+      bookingDate.getDate(),
+      hours,
+      minutes
+    );
+
+    // Validate date and time is not in the past
+    const now = new Date();
+    if (bookingDateTime < now) {
       return NextResponse.json(
-        { error: "Booking date cannot be in the past" },
+        { error: "預訂時間不能是過去的時間" },
         { status: 400 }
       );
     }
@@ -101,28 +121,25 @@ export async function POST(request: Request) {
     const existingBooking = await prisma.booking.findFirst({
       where: {
         date: bookingDate,
-        time: bookingTime,
+        time: bookingDateTime,
       },
     });
 
     if (existingBooking) {
-      return NextResponse.json(
-        { error: "This time slot is already booked" },
-        { status: 409 }
-      );
+      return NextResponse.json({ error: "此時段已被預訂" }, { status: 409 });
     }
 
     const booking = await prisma.booking.create({
       data: {
-        userId,
-        guestName: !userId ? guestName : undefined,
-        guestEmail: !userId ? guestEmail : undefined,
-        guestPhone: !userId ? guestPhone : undefined,
         date: bookingDate,
-        time: bookingTime,
-        guests,
-        notes,
-        status: "PENDING", // Set initial status (uppercase to match enum)
+        time: bookingDateTime,
+        guests: numberOfPeople,
+        notes: notes || "",
+        userId,
+        guestName,
+        guestEmail,
+        guestPhone,
+        status: "PENDING",
       },
       include: {
         user: {
@@ -146,9 +163,21 @@ export async function POST(request: Request) {
           { status: 404 }
         );
       }
+      // Add more specific Prisma error handling
+      return NextResponse.json(
+        { error: `Database error: ${error.message}` },
+        { status: 500 }
+      );
+    }
+    // If it's a regular Error object, return its message
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { error: `預訂失敗: ${error.message}` },
+        { status: 500 }
+      );
     }
     return NextResponse.json(
-      { error: "Failed to create booking" },
+      { error: "預訂失敗，請稍後再試" },
       { status: 500 }
     );
   }
