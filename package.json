@@ -10,6 +10,7 @@
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
   },
   "dependencies": {
+    "@auth/prisma-adapter": "^2.8.0",
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
@@ -23,6 +24,7 @@
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.14.0",
     "next": "15.2.4",
+    "next-auth": "^4.24.11",
     "notistack": "^3.0.2",
     "prisma": "^6.5.0",
     "react": "^19.0.0",

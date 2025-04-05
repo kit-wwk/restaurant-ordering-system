@@ -18,6 +18,7 @@ import {
   ShoppingCart,
   Event,
   People,
+  Settings,
 } from "@mui/icons-material";
 
 const drawerWidth = 280;
@@ -28,6 +29,7 @@ const menuItems = [
   { text: "訂單管理", path: "/admin/orders", icon: <ShoppingCart /> },
   { text: "訂座管理", path: "/admin/bookings", icon: <Event /> },
   { text: "用戶管理", path: "/admin/users", icon: <People /> },
+  { text: "餐廳設定", path: "/admin/restaurant", icon: <Settings /> },
 ];
 
 export default function AdminLayout({
