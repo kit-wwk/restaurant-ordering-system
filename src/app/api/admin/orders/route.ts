@@ -1,101 +1,102 @@
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
-interface OrderItem {
+interface TransformedOrderItem {
   id: string;
   name: string;
   price: number;
   quantity: number;
 }
 
-interface Order {
+interface TransformedOrder {
   id: string;
   userId: string;
   customerName: string;
-  items: OrderItem[];
+  items: TransformedOrderItem[];
   subtotal: number;
   total: number;
-  status: "pending" | "processing" | "completed" | "cancelled";
+  status: string;
   createdAt: string;
   updatedAt: string;
 }
 
-// Mock orders data - in a real app, this would be in a database
-const mockOrders: Order[] = [
-  {
-    id: "order1",
-    userId: "user1",
-    customerName: "陳大文",
-    items: [
-      {
-        id: "item1",
-        name: "刺身拼盤",
-        price: 188,
-        quantity: 1,
-      },
-      {
-        id: "item2",
-        name: "天婦羅拼盤",
-        price: 128,
-        quantity: 2,
-      },
-    ],
-    subtotal: 444,
-    total: 444,
-    status: "completed",
-    createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
-    updatedAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(), // 25 mins ago
-  },
-  {
-    id: "order2",
-    userId: "user2",
-    customerName: "李小明",
-    items: [
-      {
-        id: "item3",
-        name: "韓式炸雞",
-        price: 98,
-        quantity: 1,
-      },
-    ],
-    subtotal: 98,
-    total: 98,
-    status: "pending",
-    createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(), // 15 mins ago
-    updatedAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(), // 15 mins ago
-  },
-];
-
 // GET /api/admin/orders - Get all orders with optional filters
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const status = searchParams.get("status");
-  const startDate = searchParams.get("startDate");
-  const endDate = searchParams.get("endDate");
+  try {
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get("status");
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
 
-  let filteredOrders = [...mockOrders];
+    // Build where clause based on filters
+    const where: Prisma.OrderWhereInput = {};
 
-  if (status) {
-    filteredOrders = filteredOrders.filter((order) => order.status === status);
-  }
+    if (status) {
+      where.status = status.toUpperCase() as Prisma.OrderStatus;
+    }
 
-  if (startDate) {
-    filteredOrders = filteredOrders.filter(
-      (order) => new Date(order.createdAt) >= new Date(startDate)
+    if (startDate) {
+      where.createdAt = {
+        ...where.createdAt,
+        gte: new Date(startDate),
+      };
+    }
+
+    if (endDate) {
+      where.createdAt = {
+        ...where.createdAt,
+        lte: new Date(endDate),
+      };
+    }
+
+    const orders = await prisma.order.findMany({
+      where,
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        items: {
+          include: {
+            menuItem: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    // Transform the data to match the frontend expectations
+    const transformedOrders: TransformedOrder[] = orders.map((order) => ({
+      id: order.id,
+      userId: order.userId || "",
+      customerName: order.user?.name || order.guestName || "Unknown",
+      items: order.items.map((item) => ({
+        id: item.id,
+        name: item.menuItem.name,
+        price: Number(item.price),
+        quantity: item.quantity,
+      })),
+      subtotal: Number(order.total),
+      total: Number(order.total),
+      status: order.status.toLowerCase(),
+      createdAt: order.createdAt.toISOString(),
+      updatedAt: order.updatedAt.toISOString(),
+    }));
+
+    return NextResponse.json(transformedOrders);
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch orders" },
+      { status: 500 }
     );
   }
-
-  if (endDate) {
-    filteredOrders = filteredOrders.filter(
-      (order) => new Date(order.createdAt) <= new Date(endDate)
-    );
-  }
-
-  // Sort by createdAt in descending order (newest first)
-  filteredOrders.sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-
-  return NextResponse.json(filteredOrders);
 }
 
 // PUT /api/admin/orders - Update order status
@@ -104,16 +105,51 @@ export async function PUT(request: Request) {
     const body = await request.json();
     const { orderId, status } = body;
 
-    const order = mockOrders.find((o) => o.id === orderId);
-    if (!order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    }
+    const updatedOrder = await prisma.order.update({
+      where: {
+        id: orderId,
+      },
+      data: {
+        status: status.toUpperCase() as Prisma.OrderStatus,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        items: {
+          include: {
+            menuItem: true,
+          },
+        },
+      },
+    });
 
-    order.status = status;
-    order.updatedAt = new Date().toISOString();
+    // Transform the response to match frontend expectations
+    const transformedOrder: TransformedOrder = {
+      id: updatedOrder.id,
+      userId: updatedOrder.userId || "",
+      customerName:
+        updatedOrder.user?.name || updatedOrder.guestName || "Unknown",
+      items: updatedOrder.items.map((item) => ({
+        id: item.id,
+        name: item.menuItem.name,
+        price: Number(item.price),
+        quantity: item.quantity,
+      })),
+      subtotal: Number(updatedOrder.total),
+      total: Number(updatedOrder.total),
+      status: updatedOrder.status.toLowerCase(),
+      createdAt: updatedOrder.createdAt.toISOString(),
+      updatedAt: updatedOrder.updatedAt.toISOString(),
+    };
 
-    return NextResponse.json(order);
+    return NextResponse.json(transformedOrder);
   } catch (error) {
+    console.error("Error updating order:", error);
     return NextResponse.json(
       { error: "Failed to update order" },
       { status: 500 }

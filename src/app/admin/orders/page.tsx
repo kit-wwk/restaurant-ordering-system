@@ -46,26 +46,34 @@ interface Order {
   items: OrderItem[];
   subtotal: number;
   total: number;
-  status: "pending" | "processing" | "completed" | "cancelled";
+  status: string;
   createdAt: string;
   updatedAt: string;
 }
 
-const statusColors: Record<
-  Order["status"],
-  "warning" | "info" | "success" | "error"
-> = {
+const statusColors: Record<string, "warning" | "info" | "success" | "error"> = {
   pending: "warning",
-  processing: "info",
+  confirmed: "info",
+  preparing: "info",
+  ready: "success",
   completed: "success",
   cancelled: "error",
 };
 
-const statusLabels = {
+const statusLabels: Record<string, string> = {
   pending: "待處理",
-  processing: "處理中",
+  confirmed: "已確認",
+  preparing: "準備中",
+  ready: "可取餐",
   completed: "已完成",
   cancelled: "已取消",
+};
+
+const nextStatus: Record<string, string> = {
+  pending: "confirmed",
+  confirmed: "preparing",
+  preparing: "ready",
+  ready: "completed",
 };
 
 export default function OrdersManagement() {
@@ -164,7 +172,9 @@ export default function OrdersManagement() {
         >
           <MenuItem value="">全部</MenuItem>
           <MenuItem value="pending">待處理</MenuItem>
-          <MenuItem value="processing">處理中</MenuItem>
+          <MenuItem value="confirmed">已確認</MenuItem>
+          <MenuItem value="preparing">準備中</MenuItem>
+          <MenuItem value="ready">可取餐</MenuItem>
           <MenuItem value="completed">已完成</MenuItem>
           <MenuItem value="cancelled">已取消</MenuItem>
         </TextField>
@@ -219,27 +229,16 @@ export default function OrdersManagement() {
                     >
                       <VisibilityIcon />
                     </IconButton>
-                    {order.status === "pending" && (
+                    {nextStatus[order.status] && (
                       <Button
                         size="small"
                         variant="contained"
+                        color={statusColors[nextStatus[order.status]]}
                         onClick={() =>
-                          handleStatusUpdate(order.id, "processing")
+                          handleStatusUpdate(order.id, nextStatus[order.status])
                         }
                       >
-                        開始處理
-                      </Button>
-                    )}
-                    {order.status === "processing" && (
-                      <Button
-                        size="small"
-                        variant="contained"
-                        color="success"
-                        onClick={() =>
-                          handleStatusUpdate(order.id, "completed")
-                        }
-                      >
-                        完成訂單
+                        {statusLabels[nextStatus[order.status]]}
                       </Button>
                     )}
                   </Stack>

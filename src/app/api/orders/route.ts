@@ -39,29 +39,40 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { userId, items } = body;
+    const { userId, items, guestName, guestEmail, guestPhone } = body;
 
     console.log("Received order request:", {
       userId,
+      guestInfo: { guestName, guestEmail, guestPhone },
       itemsCount: items?.length,
     });
 
-    if (!userId || !items || !Array.isArray(items) || items.length === 0) {
+    if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
-        { error: "Invalid request body. userId and items array are required." },
+        { error: "Invalid request body. items array is required." },
         { status: 400 }
       );
     }
 
-    // Verify user exists
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true },
-    });
+    // If no userId is provided, validate guest information
+    if (!userId) {
+      if (!guestName || !guestEmail || !guestPhone) {
+        return NextResponse.json(
+          { error: "Guest orders require name, email, and phone number." },
+          { status: 400 }
+        );
+      }
+    } else {
+      // Verify user exists if userId is provided
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true },
+      });
 
-    if (!user) {
-      console.error("User not found:", userId);
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      if (!user) {
+        console.error("User not found:", userId);
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
     }
 
     // Validate each item
@@ -104,6 +115,7 @@ export async function POST(request: Request) {
 
     console.log("Creating order:", {
       userId,
+      guestInfo: userId ? null : { guestName, guestEmail, guestPhone },
       total,
       itemsCount: orderItems.length,
     });
@@ -111,6 +123,9 @@ export async function POST(request: Request) {
     const order = await prisma.order.create({
       data: {
         userId,
+        guestName: !userId ? guestName : undefined,
+        guestEmail: !userId ? guestEmail : undefined,
+        guestPhone: !userId ? guestPhone : undefined,
         total,
         status: "PENDING",
         items: {

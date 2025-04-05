@@ -35,17 +35,46 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { userId, date, time, guests, notes } = body;
+    const {
+      userId,
+      date,
+      time,
+      guests,
+      notes,
+      guestName,
+      guestEmail,
+      guestPhone,
+    } = body;
 
     // Validate required fields
-    if (!userId || !date || !time || !guests) {
+    if (!date || !time || !guests) {
       return NextResponse.json(
         {
-          error:
-            "Missing required fields: userId, date, time, and guests are required",
+          error: "Missing required fields: date, time, and guests are required",
         },
         { status: 400 }
       );
+    }
+
+    // If no userId is provided, validate guest information
+    if (!userId) {
+      if (!guestName || !guestEmail || !guestPhone) {
+        return NextResponse.json(
+          { error: "Guest bookings require name, email, and phone number." },
+          { status: 400 }
+        );
+      }
+    } else {
+      // Verify user exists if userId is provided
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true },
+      });
+
+      if (!user) {
+        console.error("User not found:", userId);
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
     }
 
     // Validate guests number
@@ -86,11 +115,14 @@ export async function POST(request: Request) {
     const booking = await prisma.booking.create({
       data: {
         userId,
+        guestName: !userId ? guestName : undefined,
+        guestEmail: !userId ? guestEmail : undefined,
+        guestPhone: !userId ? guestPhone : undefined,
         date: bookingDate,
         time: bookingTime,
         guests,
         notes,
-        status: "pending", // Set initial status
+        status: "PENDING", // Set initial status (uppercase to match enum)
       },
       include: {
         user: {
