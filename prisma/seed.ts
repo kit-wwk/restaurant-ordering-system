@@ -4,56 +4,33 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  // Create admin user
+  // Create default admin user
   const adminUser = await prisma.user.upsert({
     where: { email: "admin@example.com" },
-    update: {
-      password: await bcrypt.hash("123456", 10),
-    },
+    update: {},
     create: {
       email: "admin@example.com",
-      name: "管理員",
-      password: await bcrypt.hash("123456", 10),
+      password: await bcrypt.hash("admin123", 10),
+      name: "Administrator",
       role: "ADMIN",
-      status: "ACTIVE",
       avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=admin",
+      status: "ACTIVE",
     },
   });
 
-  // Create customer user
+  // Create default customer user
   const customerUser = await prisma.user.upsert({
     where: { email: "customer@example.com" },
-    update: {
-      password: await bcrypt.hash("123456", 10),
-    },
+    update: {},
     create: {
       email: "customer@example.com",
-      name: "測試用戶",
-      password: await bcrypt.hash("123456", 10),
+      password: await bcrypt.hash("customer123", 10),
+      name: "Test User",
       role: "CUSTOMER",
-      status: "ACTIVE",
       avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=customer",
+      status: "ACTIVE",
     },
   });
-
-  // Create some guest users
-  const guestUsers = [
-    {
-      name: "陳大文",
-      email: "chan@example.com",
-      phone: "9876-5432",
-    },
-    {
-      name: "李小明",
-      email: "lee@example.com",
-      phone: "9876-1234",
-    },
-    {
-      name: "黃麗華",
-      email: "wong@example.com",
-      phone: "9888-8888",
-    },
-  ];
 
   // Create default restaurant profile
   const restaurant = await prisma.restaurantProfile.upsert({
@@ -61,10 +38,11 @@ async function main() {
     update: {},
     create: {
       id: "default",
-      name: "和洋食屋 Hidden",
+      name: "Hidden Fusion",
       description:
-        "Hidden 提供日式和洋食料理，結合傳統日本料理與西式烹飪技巧，為您帶來獨特的美食體驗。",
-      address: "九龍灣常悅道20號環球工商大廈8樓4-5號舖",
+        "Hidden Fusion offers Japanese fusion cuisine, combining traditional Japanese cooking with Western culinary techniques for a unique dining experience.",
+      address:
+        "Shops 4-5, 8/F, Global Gateway Tower, 20 Sheung Yuet Road, Kowloon Bay",
       phone: "2345-6789",
       email: "info@hidden-restaurant.com",
       openingHours: {
@@ -87,9 +65,9 @@ async function main() {
       currency: "HKD",
       taxRate: 0,
       serviceCharge: 0,
-      metaTitle: "和洋食屋 Hidden - 日式和洋食料理",
+      metaTitle: "Hidden Fusion - Japanese Fusion Cuisine",
       metaDescription:
-        "Hidden 提供日式和洋食料理，結合傳統日本料理與西式烹飪技巧，為您帶來獨特的美食體驗。",
+        "Hidden Fusion offers Japanese fusion cuisine, combining traditional Japanese cooking with Western culinary techniques for a unique dining experience.",
       licenseNumber: "2551162194",
       rating: 4.9,
       totalReviews: 100,
@@ -101,72 +79,72 @@ async function main() {
     prisma.category.upsert({
       where: { id: "1" },
       update: {
-        name: "日式料理",
+        name: "Japanese Dishes",
         restaurantId: restaurant.id,
       },
       create: {
         id: "1",
-        name: "日式料理",
+        name: "Japanese Dishes",
         restaurantId: restaurant.id,
       },
     }),
     prisma.category.upsert({
       where: { id: "2" },
       update: {
-        name: "丼飯",
+        name: "Rice Bowls",
         restaurantId: restaurant.id,
       },
       create: {
         id: "2",
-        name: "丼飯",
+        name: "Rice Bowls",
         restaurantId: restaurant.id,
       },
     }),
     prisma.category.upsert({
       where: { id: "3" },
       update: {
-        name: "麵類",
+        name: "Ramen",
         restaurantId: restaurant.id,
       },
       create: {
         id: "3",
-        name: "麵類",
+        name: "Ramen",
         restaurantId: restaurant.id,
       },
     }),
     prisma.category.upsert({
       where: { id: "4" },
       update: {
-        name: "烏冬",
+        name: "Udon",
         restaurantId: restaurant.id,
       },
       create: {
         id: "4",
-        name: "烏冬",
+        name: "Udon",
         restaurantId: restaurant.id,
       },
     }),
     prisma.category.upsert({
       where: { id: "5" },
       update: {
-        name: "亞洲菜",
+        name: "Asian Cuisine",
         restaurantId: restaurant.id,
       },
       create: {
         id: "5",
-        name: "亞洲菜",
+        name: "Asian Cuisine",
         restaurantId: restaurant.id,
       },
     }),
     prisma.category.upsert({
       where: { id: "6" },
       update: {
-        name: "飲品",
+        name: "Drinks",
         restaurantId: restaurant.id,
       },
       create: {
         id: "6",
-        name: "飲品",
+        name: "Drinks",
         restaurantId: restaurant.id,
       },
     }),
@@ -174,14 +152,15 @@ async function main() {
 
   // Create menu items
   const menuItems = await Promise.all([
-    // 日式料理
+    // Japanese Dishes
     prisma.menuItem.upsert({
       where: { id: "1" },
       update: {},
       create: {
         id: "1",
-        name: "牛舌蒜蓉辣油",
-        description: "香煎牛舌配特製蒜蓉辣油，口感鮮嫩多汁",
+        name: "Beef Tongue with Garlic Chili Oil",
+        description:
+          "Pan-fried beef tongue with special garlic chili oil, tender and juicy",
         price: 88,
         categoryId: categories[0].id,
         imageUrl: "/images/sashimi.jpg",
@@ -193,22 +172,22 @@ async function main() {
       update: {},
       create: {
         id: "2",
-        name: "和牛漢堡扒",
-        description: "優質和牛製成的漢堡扒，肉質鮮嫩多汁",
+        name: "Wagyu Beef Patty",
+        description: "Premium wagyu beef patty, juicy and flavorful",
         price: 98,
         categoryId: categories[0].id,
         imageUrl: "/images/tempura.jpg",
         isAvailable: true,
       },
     }),
-    // 丼飯
+    // Rice Bowls
     prisma.menuItem.upsert({
       where: { id: "3" },
       update: {},
       create: {
         id: "3",
-        name: "燒三文魚牛油果飯",
-        description: "香煎三文魚配上新鮮牛油果，健康美味",
+        name: "Grilled Salmon & Avocado Rice Bowl",
+        description: "Grilled salmon with fresh avocado, healthy and delicious",
         price: 88,
         categoryId: categories[1].id,
         imageUrl: "/images/tendon.jpg",
@@ -220,22 +199,23 @@ async function main() {
       update: {},
       create: {
         id: "4",
-        name: "牛舌飯",
-        description: "嫩滑牛舌配上日式醬汁，搭配白飯，豐富美味",
+        name: "Beef Tongue Rice Bowl",
+        description: "Tender beef tongue with Japanese sauce over steamed rice",
         price: 98,
         categoryId: categories[1].id,
         imageUrl: "/images/gyudon.jpg",
         isAvailable: true,
       },
     }),
-    // 麵類
+    // Ramen
     prisma.menuItem.upsert({
       where: { id: "5" },
       update: {},
       create: {
         id: "5",
-        name: "海鮮拉麵",
-        description: "豐富海鮮配上濃郁湯底，麵條彈牙爽滑",
+        name: "Seafood Ramen",
+        description:
+          "Rich seafood ramen with springy noodles and flavorful broth",
         price: 88,
         categoryId: categories[2].id,
         imageUrl: "/images/ramen.jpg",
@@ -247,22 +227,23 @@ async function main() {
       update: {},
       create: {
         id: "6",
-        name: "黑蒜油豚骨拉麵",
-        description: "特製黑蒜油豚骨湯底，香濃醇厚，配上彈牙麵條",
+        name: "Black Garlic Tonkotsu Ramen",
+        description:
+          "Special black garlic oil tonkotsu broth with springy noodles",
         price: 78,
         categoryId: categories[2].id,
         imageUrl: "/images/dandan.jpg",
         isAvailable: true,
       },
     }),
-    // 烏冬
+    // Udon
     prisma.menuItem.upsert({
       where: { id: "7" },
       update: {},
       create: {
         id: "7",
-        name: "炒明太子烏冬",
-        description: "香辣明太子炒烏冬，口感豐富，辣香可口",
+        name: "Mentaiko Fried Udon",
+        description: "Spicy cod roe fried udon, rich in flavor and texture",
         price: 78,
         categoryId: categories[3].id,
         imageUrl: "/images/beef-udon.jpg",
@@ -274,22 +255,22 @@ async function main() {
       update: {},
       create: {
         id: "8",
-        name: "日式炒烏冬",
-        description: "日式風味炒烏冬，加入多種蔬菜，口感豐富",
+        name: "Japanese Fried Udon",
+        description: "Japanese-style fried udon with various vegetables",
         price: 68,
         categoryId: categories[3].id,
         imageUrl: "/images/tempura-udon.jpg",
         isAvailable: true,
       },
     }),
-    // 亞洲菜
+    // Asian Cuisine
     prisma.menuItem.upsert({
       where: { id: "9" },
       update: {},
       create: {
         id: "9",
-        name: "泰式炒飯",
-        description: "香辣泰式炒飯，加入蝦仁和蔬菜，風味獨特",
+        name: "Thai Fried Rice",
+        description: "Spicy Thai fried rice with shrimp and vegetables",
         price: 68,
         categoryId: categories[4].id,
         imageUrl: "/images/green-curry.jpg",
@@ -301,22 +282,23 @@ async function main() {
       update: {},
       create: {
         id: "10",
-        name: "韓式泡菜炒飯",
-        description: "韓式泡菜炒飯，酸辣開胃，搭配煎蛋",
+        name: "Korean Kimchi Fried Rice",
+        description: "Korean kimchi fried rice with fried egg on top",
         price: 78,
         categoryId: categories[4].id,
         imageUrl: "/images/korean-chicken.jpg",
         isAvailable: true,
       },
     }),
-    // 飲品
+    // Drinks
     prisma.menuItem.upsert({
       where: { id: "11" },
       update: {},
       create: {
         id: "11",
-        name: "梅子蘇打",
-        description: "清爽的梅子蘇打水，酸甜可口，消暑解渴",
+        name: "Plum Soda",
+        description:
+          "Refreshing plum soda, sweet and sour, perfect for hot days",
         price: 28,
         categoryId: categories[5].id,
         imageUrl: "/images/gyudon.jpg",
@@ -328,8 +310,9 @@ async function main() {
       update: {},
       create: {
         id: "12",
-        name: "抹茶拿鐵",
-        description: "香濃抹茶配上奶泡，口感順滑，微苦回甘",
+        name: "Matcha Latte",
+        description:
+          "Rich matcha with milk foam, smooth with a slight bitterness",
         price: 38,
         categoryId: categories[5].id,
         imageUrl: "/images/green-curry.jpg",
@@ -346,7 +329,7 @@ async function main() {
       create: {
         id: "1",
         restaurantId: restaurant.id,
-        description: "10%折扣",
+        description: "10% Discount",
         discountPercentage: 10,
         minimumOrder: 120,
         isAutoApplied: true,
@@ -356,38 +339,49 @@ async function main() {
 
   // Create some bookings
   const bookings = await Promise.all([
-    // Registered user bookings
+    // Registered user booking
     prisma.booking.create({
       data: {
         userId: customerUser.id,
-        date: new Date("2025-04-10"),
-        time: new Date("2025-04-10T19:00:00Z"),
+        date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days from now
+        time: new Date(
+          Date.now() + 5 * 24 * 60 * 60 * 1000 + 19 * 60 * 60 * 1000
+        ), // 7pm
         guests: 4,
         status: BookingStatus.CONFIRMED,
-        notes: "靠窗座位",
+        notes: "Window seat preferred",
       },
     }),
     // Guest bookings
-    ...guestUsers.map((guest, index) =>
-      prisma.booking.create({
+    ...new Array(3).fill(null).map((_, index) => {
+      const guestNames = ["David Chan", "Lee Ming", "Helen Wong"];
+      const guestEmails = [
+        "chan@example.com",
+        "lee@example.com",
+        "wong@example.com",
+      ];
+      const guestPhones = ["9876-5432", "9876-1234", "9888-8888"];
+      const statuses = [
+        BookingStatus.PENDING,
+        BookingStatus.CONFIRMED,
+        BookingStatus.CANCELLED,
+      ];
+
+      return prisma.booking.create({
         data: {
-          date: new Date(Date.now() + (index + 1) * 24 * 60 * 60 * 1000), // Next few days
+          date: new Date(Date.now() + (index + 1) * 24 * 60 * 60 * 1000),
           time: new Date(
-            Date.now() + (index + 1) * 24 * 60 * 60 * 1000 + 19 * 60 * 60 * 1000
-          ), // 7 PM
-          guests: 2 + index,
-          status: [
-            BookingStatus.PENDING,
-            BookingStatus.CONFIRMED,
-            BookingStatus.CANCELLED,
-          ][index],
-          notes: "無特別要求",
-          guestName: guest.name,
-          guestEmail: guest.email,
-          guestPhone: guest.phone,
+            Date.now() + (index + 2) * 24 * 60 * 60 * 1000 + 9 * 60 * 60 * 1000
+          ), // 9am
+          guests: index + 2,
+          status: statuses[index],
+          notes: "No special requests",
+          guestName: guestNames[index],
+          guestEmail: guestEmails[index],
+          guestPhone: guestPhones[index],
         },
-      })
-    ),
+      });
+    }),
   ]);
 
   // Create some orders

@@ -10,7 +10,6 @@ import {
   ListItemText,
   ListItemSecondaryAction,
   Button,
-  Divider,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -22,6 +21,7 @@ import { formatPrice } from "@/utils/format";
 import { useState, useEffect } from "react";
 import { useSnackbar } from "notistack";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/router";
 
 interface CartSidebarProps {
   open: boolean;
@@ -33,6 +33,7 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
   const { state: authState } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
+  const router = useRouter();
 
   useEffect(() => {
     const fetchPromotions = async () => {
@@ -63,9 +64,11 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
     }
   };
 
-  const handleSubmitOrder = async () => {
+  const handlePlaceOrder = async () => {
     if (!authState.user) {
-      enqueueSnackbar("請先登入後再下單", { variant: "error" });
+      enqueueSnackbar("Please log in before placing an order", {
+        variant: "error",
+      });
       return;
     }
 
@@ -110,13 +113,15 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
         throw new Error(responseData.error || "Failed to submit order");
       }
 
+      enqueueSnackbar("Order submitted successfully!", { variant: "success" });
       dispatch({ type: "CLEAR_CART" });
-      onClose();
-      enqueueSnackbar("訂單已成功提交！", { variant: "success" });
+      router.push("/orders");
     } catch (error) {
       console.error("Error submitting order:", error);
       enqueueSnackbar(
-        error instanceof Error ? error.message : "提交訂單時出錯，請稍後再試。",
+        error instanceof Error
+          ? error.message
+          : "Error submitting order, please try again later.",
         { variant: "error" }
       );
     } finally {
@@ -136,17 +141,14 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
       <Box
         sx={{ p: 2, height: "100%", display: "flex", flexDirection: "column" }}
       >
-        <Typography variant="h6" component="h2" gutterBottom>
-          你的訂購項目
+        <Typography variant="h6" className="font-semibold p-4 border-b">
+          Your Order Items
         </Typography>
 
         {state.items.length === 0 ? (
-          <Typography
-            color="text.secondary"
-            sx={{ py: 4, textAlign: "center" }}
-          >
-            購物車是空的
-          </Typography>
+          <Box className="p-4 text-center text-gray-400">
+            <Typography>Your cart is empty</Typography>
+          </Box>
         ) : (
           <>
             <List sx={{ flexGrow: 1, overflow: "auto" }}>
@@ -181,96 +183,83 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
               ))}
             </List>
 
-            <Box sx={{ pt: 2 }}>
-              <Divider />
-              <Box sx={{ py: 2 }}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    mb: 1,
-                  }}
-                >
-                  <Typography>小計</Typography>
-                  <Typography>HK$ {formatPrice(state.subtotal)}</Typography>
+            <Box className="p-4 border-t">
+              <Box className="flex justify-between mb-2">
+                <Typography>Subtotal</Typography>
+                <Typography>{formatPrice(state.total)}</Typography>
+              </Box>
+
+              {/* Discount */}
+              {state.appliedPromotion && (
+                <Box className="flex justify-between mb-2 text-green-600">
+                  <Typography>
+                    Discount ({state.appliedPromotion.discountPercentage}% off)
+                  </Typography>
+                  <Typography>
+                    -{" "}
+                    {formatPrice(
+                      (state.total *
+                        state.appliedPromotion.discountPercentage) /
+                        100
+                    )}
+                  </Typography>
                 </Box>
-                {state.appliedPromotion && (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      mb: 1,
-                      color: "success.main",
-                    }}
-                  >
-                    <Typography>
-                      折扣 ({state.appliedPromotion.discountPercentage}% off)
+              )}
+
+              <Box className="flex justify-between mt-4 text-lg font-bold">
+                <Typography variant="h6">Total</Typography>
+                <Typography variant="h6">
+                  {formatPrice(
+                    state.appliedPromotion
+                      ? state.total -
+                          (state.total *
+                            state.appliedPromotion.discountPercentage) /
+                            100
+                      : state.total
+                  )}
+                </Typography>
+              </Box>
+
+              {/* Applied Promotion */}
+              {state.appliedPromotion && (
+                <Box className="mt-4 p-2 bg-green-50 text-green-700 rounded-md text-sm">
+                  Best discount applied: {state.appliedPromotion.description}
+                </Box>
+              )}
+
+              {/* Available Promotions */}
+              {state.availablePromotions.length > 0 &&
+                !state.appliedPromotion && (
+                  <Box className="mt-4">
+                    <Typography className="text-sm font-medium mb-2">
+                      Available Promotions:
                     </Typography>
-                    <Typography>- HK$ {formatPrice(state.discount)}</Typography>
+                    {state.availablePromotions.map((promo) => (
+                      <Box
+                        key={promo.id}
+                        className="p-2 mb-2 border rounded-md text-sm flex flex-col"
+                      >
+                        <Typography className="text-sm font-medium">
+                          {promo.description}
+                        </Typography>
+                        <Typography className="text-xs text-gray-500">
+                          (Spend HK$ {formatPrice(promo.minimumOrder)} to get{" "}
+                          {promo.discountPercentage}% off)
+                        </Typography>
+                      </Box>
+                    ))}
                   </Box>
                 )}
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    mb: 2,
-                  }}
-                >
-                  <Typography variant="h6">總計</Typography>
-                  <Typography variant="h6">
-                    HK$ {formatPrice(state.total)}
-                  </Typography>
-                </Box>
-                {state.appliedPromotion ? (
-                  <Typography
-                    variant="body2"
-                    color="success.main"
-                    sx={{ mb: 2, textAlign: "right" }}
-                  >
-                    已套用最高折扣: {state.appliedPromotion.description}
-                  </Typography>
-                ) : (
-                  state.availablePromotions.length > 0 && (
-                    <Box sx={{ mb: 2 }}>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        gutterBottom
-                      >
-                        可用優惠:
-                      </Typography>
-                      {state.availablePromotions.map((promo) => (
-                        <Typography
-                          key={promo.id}
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                          }}
-                        >
-                          <span>{promo.description}</span>
-                          <span>
-                            (消費滿 HK$ {formatPrice(promo.minimumOrder)} 可享{" "}
-                            {promo.discountPercentage}% 折扣)
-                          </span>
-                        </Typography>
-                      ))}
-                    </Box>
-                  )
-                )}
-                <Button
-                  variant="contained"
-                  color="primary"
-                  fullWidth
-                  size="large"
-                  onClick={handleSubmitOrder}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "提交中..." : "提交訂單"}
-                </Button>
-              </Box>
+
+              <Button onClick={() => onClose()}>Close</Button>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handlePlaceOrder}
+                disabled={state.items.length === 0 || isSubmitting}
+              >
+                Place Order
+              </Button>
             </Box>
           </>
         )}

@@ -1,27 +1,28 @@
 "use client";
 
+import React, { useState, useEffect } from "react";
 import {
   AppBar,
+  Box,
   Toolbar,
-  Typography,
-  Button,
   IconButton,
-  Avatar,
   Menu,
   MenuItem,
+  Button,
+  Avatar,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
-  Box,
-  Alert,
+  FormHelperText,
 } from "@mui/material";
-import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Restaurant, AdminPanelSettings, Event } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
 import { UserRole } from "@/types/user";
+import Link from "next/link";
+import { useSnackbar } from "notistack";
 
 export default function Header() {
   const {
@@ -36,6 +37,8 @@ export default function Header() {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [formErrors, setFormErrors] = useState({ email: "", password: "" });
+  const { enqueueSnackbar } = useSnackbar();
+
   const getDefaultTime = () => {
     const now = new Date();
     // Get the next hour
@@ -78,16 +81,16 @@ export default function Header() {
 
     // Email validation
     if (!loginData.email) {
-      newErrors.email = "電郵地址為必填";
+      newErrors.email = "Email is required";
       isValid = false;
     } else if (!/\S+@\S+\.\S+/.test(loginData.email)) {
-      newErrors.email = "請輸入有效的電郵地址";
+      newErrors.email = "Please enter a valid email address";
       isValid = false;
     }
 
     // Password validation
     if (!loginData.password) {
-      newErrors.password = "密碼為必填";
+      newErrors.password = "Password is required";
       isValid = false;
     }
 
@@ -131,15 +134,15 @@ export default function Header() {
     // Guest information validation (only if user is not logged in)
     if (!user) {
       if (!bookingData.guestName) {
-        newErrors.guestName = "姓名為必填";
+        newErrors.guestName = "Name is required";
         isValid = false;
       }
 
       if (!bookingData.guestPhone) {
-        newErrors.guestPhone = "電話為必填";
+        newErrors.guestPhone = "Phone number is required";
         isValid = false;
-      } else if (!/^[0-9]{8}$/.test(bookingData.guestPhone)) {
-        newErrors.guestPhone = "請輸入有效的8位電話號碼";
+      } else if (!/^\d{8}$/.test(bookingData.guestPhone)) {
+        newErrors.guestPhone = "Please enter a valid 8-digit phone number";
         isValid = false;
       }
 
@@ -148,40 +151,40 @@ export default function Header() {
         bookingData.guestEmail &&
         !/\S+@\S+\.\S+/.test(bookingData.guestEmail)
       ) {
-        newErrors.guestEmail = "請輸入有效的電郵地址";
+        newErrors.guestEmail = "Please enter a valid email address";
         isValid = false;
       }
     }
 
     // Date validation
     if (!bookingData.date) {
-      newErrors.date = "日期為必填";
+      newErrors.date = "Date is required";
       isValid = false;
     } else {
       const selectedDate = new Date(bookingData.date);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       if (selectedDate < today) {
-        newErrors.date = "不能選擇過去的日期";
+        newErrors.date = "Cannot select a past date";
         isValid = false;
       }
     }
 
     // Time validation
     if (!bookingData.time) {
-      newErrors.time = "時間為必填";
+      newErrors.time = "Time is required";
       isValid = false;
     }
 
     // Number of people validation
     if (!bookingData.numberOfPeople) {
-      newErrors.numberOfPeople = "人數為必填";
+      newErrors.numberOfPeople = "Number of people is required";
       isValid = false;
     } else if (
       bookingData.numberOfPeople < 1 ||
       bookingData.numberOfPeople > 10
     ) {
-      newErrors.numberOfPeople = "人數必須在1至10人之間";
+      newErrors.numberOfPeople = "Number of people must be between 1 and 10";
       isValid = false;
     }
 
@@ -216,7 +219,7 @@ export default function Header() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "預訂失敗");
+        throw new Error(data.error || "Booking failed");
       }
 
       // Only close and reset if successful
@@ -239,9 +242,16 @@ export default function Header() {
         guestPhone: "",
       });
       setBookingApiError("");
+      enqueueSnackbar("Booking successful!", { variant: "success" });
     } catch (error) {
       console.error("Booking error:", error);
       setBookingApiError((error as Error).message);
+      enqueueSnackbar(
+        error instanceof Error
+          ? error.message
+          : "An error occurred during booking, please try again later",
+        { variant: "error" }
+      );
     }
   };
 
@@ -258,9 +268,9 @@ export default function Header() {
           }}
           onClick={() => router.push("/")}
         >
-          <Typography variant="h6" component="div">
-            餐廳點餐系統
-          </Typography>
+          <Link href="/" className="text-white">
+            Restaurant Ordering System
+          </Link>
         </Box>
 
         <Button
@@ -268,7 +278,7 @@ export default function Header() {
           startIcon={<Event />}
           onClick={() => setBookingOpen(true)}
         >
-          訂座
+          Book a Table
         </Button>
 
         {!isLoading && (
@@ -282,7 +292,7 @@ export default function Header() {
                     onClick={() => router.push("/admin")}
                     sx={{ mr: 2 }}
                   >
-                    管理後台
+                    Admin Dashboard
                   </Button>
                 )}
                 <IconButton onClick={handleMenu} sx={{ ml: 2 }}>
@@ -296,10 +306,10 @@ export default function Header() {
                   onClose={handleClose}
                 >
                   <MenuItem onClick={() => router.push("/profile")}>
-                    個人資料
+                    Profile
                   </MenuItem>
                   <MenuItem onClick={() => router.push("/bookings")}>
-                    我的訂座
+                    My Bookings
                   </MenuItem>
                   <MenuItem
                     onClick={() => {
@@ -307,7 +317,7 @@ export default function Header() {
                       logout();
                     }}
                   >
-                    登出
+                    Logout
                   </MenuItem>
                 </Menu>
               </>
@@ -319,7 +329,7 @@ export default function Header() {
                   setLoginOpen(true);
                 }}
               >
-                登入
+                Login
               </Button>
             )}
           </>
@@ -339,17 +349,13 @@ export default function Header() {
         }}
       >
         <form onSubmit={handleLoginSubmit}>
-          <DialogTitle>登入</DialogTitle>
+          <DialogTitle>Login</DialogTitle>
           <DialogContent>
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
+            {error && <FormHelperText error>{error}</FormHelperText>}
             <TextField
               autoFocus
               margin="dense"
-              label="電郵地址"
+              label="Email"
               type="email"
               fullWidth
               value={loginData.email}
@@ -364,7 +370,7 @@ export default function Header() {
             />
             <TextField
               margin="dense"
-              label="密碼"
+              label="Password"
               type="password"
               fullWidth
               value={loginData.password}
@@ -385,13 +391,13 @@ export default function Header() {
                 setFormErrors({ email: "", password: "" });
               }}
             >
-              取消
+              Cancel
             </Button>
             <Button
               type="submit"
               disabled={isLoading || !loginData.email || !loginData.password}
             >
-              登入
+              Login
             </Button>
           </DialogActions>
         </form>
@@ -414,16 +420,14 @@ export default function Header() {
         }}
       >
         <form onSubmit={handleBookingSubmit}>
-          <DialogTitle>預訂座位</DialogTitle>
+          <DialogTitle>Book a Table</DialogTitle>
           <DialogContent>
             {bookingApiError && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {bookingApiError}
-              </Alert>
+              <FormHelperText error>{bookingApiError}</FormHelperText>
             )}
             <TextField
               margin="dense"
-              label="姓名"
+              label="Name"
               fullWidth
               value={user ? user.name : bookingData.guestName}
               onChange={(e) => {
@@ -441,7 +445,7 @@ export default function Header() {
             />
             <TextField
               margin="dense"
-              label="電話"
+              label="Phone"
               fullWidth
               value={user ? user.phone || "" : bookingData.guestPhone}
               onChange={(e) => {
@@ -459,7 +463,7 @@ export default function Header() {
             />
             <TextField
               margin="dense"
-              label="電郵地址（選填）"
+              label="Email (optional)"
               type="email"
               fullWidth
               value={user ? user.email : bookingData.guestEmail}
@@ -478,7 +482,7 @@ export default function Header() {
             />
             <TextField
               margin="dense"
-              label="日期"
+              label="Date"
               type="date"
               fullWidth
               InputLabelProps={{ shrink: true }}
@@ -494,7 +498,7 @@ export default function Header() {
             />
             <TextField
               margin="dense"
-              label="時間"
+              label="Time"
               type="time"
               fullWidth
               InputLabelProps={{ shrink: true }}
@@ -510,7 +514,7 @@ export default function Header() {
             />
             <TextField
               margin="dense"
-              label="人數"
+              label="Number of People"
               type="number"
               fullWidth
               value={bookingData.numberOfPeople}
@@ -529,7 +533,7 @@ export default function Header() {
             />
             <TextField
               margin="dense"
-              label="備註"
+              label="Notes"
               multiline
               rows={4}
               fullWidth
@@ -540,7 +544,7 @@ export default function Header() {
                   notes: e.target.value,
                 })
               }
-              placeholder="如有特別要求，請在此說明"
+              placeholder="Any special requests, please let us know"
             />
           </DialogContent>
           <DialogActions>
@@ -557,9 +561,9 @@ export default function Header() {
                 });
               }}
             >
-              取消
+              Cancel
             </Button>
-            <Button type="submit">預訂</Button>
+            <Button type="submit">Book</Button>
           </DialogActions>
         </form>
       </Dialog>
