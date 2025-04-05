@@ -13,17 +13,67 @@ import {
 } from "@mui/material";
 import { AccessTime, Info } from "@mui/icons-material";
 import { useState, useEffect } from "react";
-import type {
-  Restaurant,
-  Category,
-  Promotion,
-  OperatingHours,
-} from "@/types/restaurant";
+import type { MenuItem } from "@/types/restaurant";
 import MenuSection from "@/components/MenuSection/MenuSection";
 import MenuSkeleton from "@/components/MenuSection/MenuSkeleton";
 
+interface Category {
+  id: string;
+  name: string;
+  items: MenuItem[];
+  restaurantId: string;
+}
+
+interface Promotion {
+  id: string;
+  discountPercentage: number;
+  minimumOrder: number;
+  description: string;
+  restaurantId: string;
+  isAutoApplied: boolean;
+}
+
+interface OpeningHours {
+  [key: string]: { open: string; close: string } | undefined;
+  monday?: { open: string; close: string };
+  tuesday?: { open: string; close: string };
+  wednesday?: { open: string; close: string };
+  thursday?: { open: string; close: string };
+  friday?: { open: string; close: string };
+  saturday?: { open: string; close: string };
+  sunday?: { open: string; close: string };
+}
+
+interface RestaurantProfile {
+  id: string;
+  name: string;
+  description: string;
+  address: string;
+  phone: string;
+  email?: string;
+  openingHours: OpeningHours;
+  facebook?: string;
+  instagram?: string;
+  website?: string;
+  logoUrl?: string;
+  bannerUrl?: string;
+  maxBookingDays: number;
+  maxBookingPerSlot: number;
+  maxTableSize: number;
+  currency: string;
+  taxRate: number;
+  serviceCharge: number;
+  metaTitle?: string;
+  metaDescription?: string;
+  rating: number;
+  totalReviews: number;
+  licenseNumber?: string;
+  categories: Category[];
+  promotions: Promotion[];
+}
+
 export default function Home() {
-  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  const [restaurant, setRestaurant] = useState<RestaurantProfile | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<
     string | undefined
   >();
@@ -32,7 +82,7 @@ export default function Home() {
 
   useEffect(() => {
     // Fetch restaurant data
-    fetch("/api/restaurant/1")
+    fetch("/api/admin/restaurant-profile")
       .then((res) => {
         if (!res.ok) {
           throw new Error("Failed to fetch restaurant data");
@@ -93,6 +143,9 @@ export default function Home() {
                 {restaurant.rating}/5 ({restaurant.totalReviews}+ reviews)
               </Typography>
             </Box>
+            <Typography variant="body1" color="text.secondary">
+              {restaurant.description}
+            </Typography>
           </Box>
         </Container>
       </Paper>
@@ -110,7 +163,8 @@ export default function Home() {
                   {promo.discountPercentage}% OFF
                 </Typography>
                 <Typography variant="body2">
-                  Minimum order: HK$ {promo.minimumOrder}. {promo.description}
+                  Minimum order: {restaurant.currency} {promo.minimumOrder}.{" "}
+                  {promo.description}
                 </Typography>
               </Box>
             ))}
@@ -173,17 +227,32 @@ export default function Home() {
           </Typography>
           <Box
             sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-              gap: 2,
+              display: "flex",
+              flexDirection: "column",
+              gap: 1,
             }}
           >
-            {restaurant.operatingHours.map(
-              (hours: OperatingHours, index: number) => (
-                <Typography key={index} variant="body2">
-                  {hours.days}: {hours.hours}
-                </Typography>
-              )
+            {[
+              "monday",
+              "tuesday",
+              "wednesday",
+              "thursday",
+              "friday",
+              "saturday",
+              "sunday",
+            ].map(
+              (day) =>
+                restaurant.openingHours[day] && (
+                  <Box key={day} sx={{ display: "flex", gap: 2 }}>
+                    <Typography variant="body2" sx={{ width: 100 }}>
+                      {day.charAt(0).toUpperCase() + day.slice(1)}:
+                    </Typography>
+                    <Typography variant="body2">
+                      {restaurant.openingHours[day].open} -{" "}
+                      {restaurant.openingHours[day].close}
+                    </Typography>
+                  </Box>
+                )
             )}
           </Box>
           <Divider sx={{ my: 2 }} />
@@ -194,12 +263,16 @@ export default function Home() {
           >
             <Info sx={{ mr: 1 }} /> Restaurant Information
           </Typography>
-          <Typography variant="body2">
-            License Number: {restaurant.licenseNumber}
-          </Typography>
-          <Typography variant="body2">
-            License Type: {restaurant.licenseType}
-          </Typography>
+          <Typography variant="body2">Address: {restaurant.address}</Typography>
+          <Typography variant="body2">Phone: {restaurant.phone}</Typography>
+          {restaurant.email && (
+            <Typography variant="body2">Email: {restaurant.email}</Typography>
+          )}
+          {restaurant.licenseNumber && (
+            <Typography variant="body2">
+              License Number: {restaurant.licenseNumber}
+            </Typography>
+          )}
         </Paper>
       </Container>
     </Box>

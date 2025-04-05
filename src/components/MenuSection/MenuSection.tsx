@@ -18,7 +18,7 @@ export default function MenuSection({
     : items;
 
   return (
-    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3, mx: -1.5 }}>
+    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
       {filteredItems.map((item) => (
         <Box
           key={item.id}
@@ -50,7 +50,7 @@ export default function MenuSection({
               }}
             >
               <Image
-                src={item.image}
+                src={item.imageUrl || "/images/default-menu-item.jpg"}
                 alt={item.name}
                 fill
                 sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 25vw"
