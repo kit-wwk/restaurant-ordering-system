@@ -127,8 +127,8 @@ If you're using Red Hat Enterprise Linux 9 (RHEL 9):
 1. Node.js installation:
 
    ```bash
-   # Install Node.js 18.x LTS on RHEL 9
-   sudo dnf install -y https://rpm.nodesource.com/pub_18.x/nodistro/repo/nodesource-release-nodistro-1.noarch.rpm
+   # Install Node.js 20.x LTS on RHEL 9
+   sudo dnf install -y https://rpm.nodesource.com/pub_20.x/nodistro/repo/nodesource-release-nodistro-1.noarch.rpm
    sudo dnf install -y nodejs
 
    # Verify installation

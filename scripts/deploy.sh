@@ -18,10 +18,10 @@ log() {
 
 # Install Node.js and npm if not installed
 if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
-    log "Node.js or npm not found. Installing Node.js 18.x LTS..."
+    log "Node.js or npm not found. Installing Node.js 20.x LTS..."
     
-    # Add NodeSource repository for Node.js 18.x
-    sudo dnf install -y https://rpm.nodesource.com/pub_18.x/nodistro/repo/nodesource-release-nodistro-1.noarch.rpm
+    # Add NodeSource repository for Node.js 20.x
+    sudo dnf install -y https://rpm.nodesource.com/pub_20.x/nodistro/repo/nodesource-release-nodistro-1.noarch.rpm
     sudo dnf install -y nodejs
     
     # Verify installation
