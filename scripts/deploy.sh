@@ -122,7 +122,7 @@ chmod +x scripts/*.sh
 # Build and start the containers
 log "Building and starting the application..."
 log "Note: Using --legacy-peer-deps to resolve MUI dependency conflicts"
-$DOCKER_COMPOSE -f docker-compose.yml up -d --build --build-arg NPM_FLAGS="--legacy-peer-deps"
+$DOCKER_COMPOSE -f docker-compose.yml up -d --build
 
 # Check if containers are running
 if $DOCKER_COMPOSE ps | grep -q "Up"; then
