@@ -93,6 +93,19 @@ fi
 
 log "Using Docker Compose command: $DOCKER_COMPOSE"
 
+# Install git if not installed
+if ! command -v git &> /dev/null; then
+    log "Git not found. Installing git..."
+    sudo dnf install -y git
+    
+    # Verify installation
+    GIT_VERSION=$(git --version)
+    log "Git $GIT_VERSION installed successfully."
+else
+    GIT_VERSION=$(git --version)
+    log "Git $GIT_VERSION is already installed."
+fi
+
 # Clone or update repository
 REPO_DIR="$HOME/pm-restaurant"
 if [ -d "$REPO_DIR" ]; then

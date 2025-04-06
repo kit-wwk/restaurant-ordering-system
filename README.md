@@ -139,7 +139,17 @@ If you're using Red Hat Enterprise Linux 9 (RHEL 9):
    npm -v
    ```
 
-2. Docker setup is different from Amazon Linux:
+2. Required tools installation:
+
+   ```bash
+   # Install git
+   sudo dnf install -y git
+
+   # Install additional required tools
+   sudo dnf install -y gzip findutils awscli nc netcat
+   ```
+
+3. Docker setup is different from Amazon Linux:
 
    ```bash
    # Install Docker on RHEL 9
@@ -153,17 +163,16 @@ If you're using Red Hat Enterprise Linux 9 (RHEL 9):
    sudo usermod -a -G docker $USER
    ```
 
-3. RHEL 9 typically uses the Docker Compose plugin rather than standalone docker-compose:
+4. RHEL 9 typically uses the Docker Compose plugin rather than standalone docker-compose:
 
    ```bash
    # Use this format with RHEL 9
    docker compose up -d
    ```
 
-4. For backup and maintenance, if you need additional packages:
-   ```bash
-   # Install required tools
-   sudo dnf install -y gzip findutils awscli nc netcat
+5. For backup and maintenance, if you need additional packages:
+   ```
+
    ```
 
 ### Important Security Notes
