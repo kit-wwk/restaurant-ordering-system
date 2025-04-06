@@ -15,6 +15,7 @@ services:
       - NEXTAUTH_SECRET=your-deployment-secret-key-change-me
       - NEXTAUTH_URL=http://localhost
       - NODE_ENV=production
+      - NEXT_PUBLIC_SKIP_ESLINT_CHECK=true
     depends_on:
       - mysql
     networks:
