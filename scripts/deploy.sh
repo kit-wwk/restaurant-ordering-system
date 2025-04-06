@@ -1,9 +1,24 @@
 #!/bin/bash
 # Restaurant Ordering System Deployment Script for RHEL 9
 # This script automates the deployment of the restaurant ordering system on RHEL 9.
+# Usage: ./deploy.sh [server-ip]
 
 # Exit on error
 set -e
+
+# Check if IP address is provided
+if [ -z "$1" ]; then
+    echo "Usage: ./deploy.sh [server-ip]"
+    echo "Example: ./deploy.sh 13.230.196.201"
+    
+    # Attempt to get the public IP as a suggestion
+    SUGGESTED_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || echo "your-server-ip")
+    echo "Suggested IP: $SUGGESTED_IP"
+    exit 1
+fi
+
+SERVER_IP="$1"
+echo "Using server IP/hostname: $SERVER_IP"
 
 # Check if script is run with root privileges
 if [ "$(id -u)" -eq 0 ]; then
@@ -15,6 +30,8 @@ fi
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
+
+log "Deploying to server: $SERVER_IP"
 
 # Install Node.js and npm if not installed
 if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
@@ -118,15 +135,68 @@ else
     cd "$REPO_DIR"
 fi
 
-# Set up environment if not already configured
-if [ ! -f .env.production ]; then
-    log "Setting up environment variables..."
+# Create/update the environment file
+log "Setting up environment variables using server IP: $SERVER_IP"
+if [ -f .env.production ]; then
+    log "Environment file exists. Updating API URLs..."
+    # Update existing environment file with correct API URL
+    sed -i "s|NEXT_PUBLIC_API_URL=.*|NEXT_PUBLIC_API_URL=http://${SERVER_IP}/api|g" .env.production
+    sed -i "s|NEXT_PUBLIC_VERCEL_URL=.*|NEXT_PUBLIC_VERCEL_URL=${SERVER_IP}|g" .env.production
+    sed -i "s|NEXTAUTH_URL=.*|NEXTAUTH_URL=http://${SERVER_IP}|g" .env.production
+else
+    # Create new environment file
     cp .env.example .env.production
     # Generate a random NEXTAUTH_SECRET
     echo "NEXTAUTH_SECRET=$(openssl rand -base64 32)" >> .env.production
-    echo "NEXTAUTH_URL=http://$(curl -s http://169.254.169.254/latest/meta-data/public-hostname)" >> .env.production
-    log "Environment file created. Please review .env.production and update values if needed."
+    echo "NEXTAUTH_URL=http://${SERVER_IP}" >> .env.production
+    echo "NEXT_PUBLIC_API_URL=http://${SERVER_IP}/api" >> .env.production
+    echo "NEXT_PUBLIC_VERCEL_URL=${SERVER_IP}" >> .env.production
 fi
+
+# Update docker-compose.yml to set correct API URL
+log "Updating docker-compose.yml with server IP: $SERVER_IP"
+if [ -f docker-compose.yml ]; then
+    # Replace localhost with actual server IP in docker-compose.yml
+    sed -i "s|NEXT_PUBLIC_API_URL=http://localhost/api|NEXT_PUBLIC_API_URL=http://${SERVER_IP}/api|g" docker-compose.yml
+    sed -i "s|NEXT_PUBLIC_VERCEL_URL=localhost|NEXT_PUBLIC_VERCEL_URL=${SERVER_IP}|g" docker-compose.yml
+    sed -i "s|NEXTAUTH_URL=http://localhost|NEXTAUTH_URL=http://${SERVER_IP}|g" docker-compose.yml
+    log "docker-compose.yml updated with server IP: $SERVER_IP"
+fi
+
+# Update next.config.js to disable trailing slashes (prevent 308 redirects)
+log "Ensuring Next.js is configured to prevent API redirects..."
+cat > next.config.js << 'EOL'
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  output: "standalone",
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  // This setting prevents automatic redirects for API routes with/without trailing slashes
+  trailingSlash: false,
+  // Allow CORS for API routes
+  async headers() {
+    return [
+      {
+        // Apply these headers to all API routes
+        source: '/api/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Credentials', value: 'true' },
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET,DELETE,PATCH,POST,PUT' },
+          { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version' },
+          { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate' }
+        ],
+      },
+    ];
+  },
+};
+
+module.exports = nextConfig;
+EOL
 
 # Set execute permissions on scripts
 log "Setting script permissions..."
@@ -147,6 +217,10 @@ if ! command -v aws &> /dev/null; then
     sudo dnf install -y awscli || log "Warning: Could not install AWS CLI"
 fi
 
+# Stop any running containers first
+log "Stopping any existing containers..."
+$DOCKER_COMPOSE -f docker-compose.yml down || true
+
 # Build and start the containers
 log "Building and starting the application..."
 log "Note: Using --legacy-peer-deps to resolve MUI dependency conflicts"
@@ -154,10 +228,19 @@ $DOCKER_COMPOSE -f docker-compose.yml up -d --build
 
 # Check if containers are running
 if $DOCKER_COMPOSE ps | grep -q "Up"; then
-    PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
     log "Deployment successful!"
-    log "Application is running at: http://$PUBLIC_IP"
+    log "Application is running at: http://$SERVER_IP"
+    log "API should be accessible at: http://$SERVER_IP/api"
     log "For HTTPS access, configure your domain and set up SSL certificates."
+    
+    # Test API health check
+    log "Testing API health check endpoint..."
+    sleep 10  # Give the app a moment to fully start
+    if curl -s "http://$SERVER_IP/api/health" | grep -q "status.*ok"; then
+        log "✅ API health check passed!"
+    else
+        log "⚠️ API health check did not return expected response. Check logs for issues."
+    fi
 else
     log "Error: Containers failed to start. Check logs with: $DOCKER_COMPOSE logs"
     exit 1
