@@ -131,6 +131,9 @@ If you're using Red Hat Enterprise Linux 9 (RHEL 9):
    sudo dnf install --allowerasing --nogpgcheck -y https://rpm.nodesource.com/pub_20.x/nodistro/repo/nodesource-release-nodistro-1.noarch.rpm
    sudo dnf install --allowerasing --nogpgcheck -y nodejs
 
+   # Update npm to specific version
+   sudo npm install -g npm@11.2.0
+
    # Verify installation
    node -v
    npm -v

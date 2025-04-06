@@ -24,6 +24,10 @@ if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
     sudo dnf install --allowerasing --nogpgcheck -y https://rpm.nodesource.com/pub_20.x/nodistro/repo/nodesource-release-nodistro-1.noarch.rpm
     sudo dnf install --allowerasing --nogpgcheck -y nodejs
     
+    # Update npm to specific version
+    log "Updating npm to version 11.2.0..."
+    sudo npm install -g npm@11.2.0
+    
     # Verify installation
     NODE_VERSION=$(node -v)
     NPM_VERSION=$(npm -v)
@@ -32,6 +36,14 @@ else
     NODE_VERSION=$(node -v)
     NPM_VERSION=$(npm -v)
     log "Node.js $NODE_VERSION and npm $NPM_VERSION are already installed."
+    
+    # Check if npm needs updating
+    if [[ "$NPM_VERSION" != "11.2.0" ]]; then
+        log "Updating npm to version 11.2.0..."
+        sudo npm install -g npm@11.2.0
+        NPM_VERSION=$(npm -v)
+        log "npm updated to version $NPM_VERSION."
+    fi
 fi
 
 # Install Docker if not installed
