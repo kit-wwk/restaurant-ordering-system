@@ -128,8 +128,8 @@ If you're using Red Hat Enterprise Linux 9 (RHEL 9):
 
    ```bash
    # Install Node.js 20.x LTS on RHEL 9
-   sudo dnf install -y https://rpm.nodesource.com/pub_20.x/nodistro/repo/nodesource-release-nodistro-1.noarch.rpm
-   sudo dnf install -y nodejs
+   sudo dnf install --allowerasing -y https://rpm.nodesource.com/pub_20.x/nodistro/repo/nodesource-release-nodistro-1.noarch.rpm
+   sudo dnf install --allowerasing -y nodejs
 
    # Verify installation
    node -v
