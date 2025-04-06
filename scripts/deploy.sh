@@ -238,6 +238,17 @@ if $DOCKER_COMPOSE ps | grep -q "Up"; then
     sleep 10  # Give the app a moment to fully start
     if curl -s "http://$SERVER_IP/api/health" | grep -q "status.*ok"; then
         log "✅ API health check passed!"
+        
+        # Explain the enhanced health endpoint
+        log "The health API now checks database connectivity and table records."
+        log "You can view detailed health information at: http://$SERVER_IP/api/health"
+        log "Sample health response fields:"
+        log "  - status: API status"
+        log "  - timestamp: Current server time"
+        log "  - environment: Node environment"
+        log "  - nextPublicApiUrl: API base URL"
+        log "  - database.status: Database connectivity"
+        log "  - database.tables: Record counts for key tables"
     else
         log "⚠️ API health check did not return expected response. Check logs for issues."
     fi
@@ -249,4 +260,5 @@ fi
 # Final instructions
 log "To view logs: $DOCKER_COMPOSE logs -f"
 log "To stop the application: $DOCKER_COMPOSE down"
-log "To set up HTTPS, configure a domain and SSL certificates." 
+log "To set up HTTPS, configure a domain and SSL certificates."
+log "To check database status: curl http://$SERVER_IP/api/health | jq" 
