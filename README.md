@@ -174,6 +174,29 @@ If you're using Red Hat Enterprise Linux 9 (RHEL 9):
 - Review network security groups to restrict access as needed
 - For RHEL 9, consider using SELinux for enhanced security
 
+### Troubleshooting
+
+#### Dependency Conflicts
+
+If you encounter MUI-related dependency conflicts during installation:
+
+```
+npm error While resolving: @mui/x-date-pickers@6.20.2
+npm error Found: @mui/material@7.0.1
+npm error Could not resolve dependency:
+npm error peer @mui/material@"^5.8.6" from @mui/x-date-pickers@6.20.2
+```
+
+Use the `--legacy-peer-deps` flag with npm:
+
+```bash
+npm install --legacy-peer-deps
+# OR
+npm ci --legacy-peer-deps
+```
+
+The deployment script automatically includes this flag when building with Docker.
+
 ## Database Management
 
 The application uses Prisma ORM to manage the database schema and queries.

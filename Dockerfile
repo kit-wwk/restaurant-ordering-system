@@ -5,9 +5,12 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
+# Add build argument for npm flags
+ARG NPM_FLAGS=""
+
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm ci ${NPM_FLAGS}
 
 # Rebuild the source code only when needed
 FROM base AS builder
