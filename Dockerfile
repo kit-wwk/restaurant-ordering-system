@@ -51,6 +51,10 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/package.json ./package.json
 
+# Make scripts directory and files executable 
+RUN ls -la /app/scripts || echo "Scripts directory not found!"
+RUN find /app/scripts -type f -name "*.sh" -exec chmod +x {} \; || echo "No shell scripts found!"
+
 # Set the correct permission for prerender cache
 RUN mkdir -p .next
 RUN chown nextjs:nodejs .next
@@ -63,6 +67,15 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY scripts/start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
+# Also copy to scripts directory and ensure permissions
+RUN mkdir -p /app/scripts
+COPY scripts/start.sh /app/scripts/start.sh
+RUN chmod +x /app/scripts/start.sh
+RUN chown -R nextjs:nodejs /app/scripts
+
+# Create a writable logs directory
+RUN mkdir -p /tmp/logs && chown -R nextjs:nodejs /tmp/logs
+
 USER nextjs
 
 EXPOSE 3000
@@ -70,5 +83,5 @@ EXPOSE 3000
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
-# Use the startup script with full path
-CMD ["/app/scripts/start.sh"] 
+# Use the full path to the script
+CMD ["/bin/sh", "/app/scripts/start.sh"] 
