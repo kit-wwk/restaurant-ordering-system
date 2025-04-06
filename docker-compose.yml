@@ -11,13 +11,14 @@ services:
     ports:
       - "80:3000"
     volumes:
-      - ./scripts:/app/scripts
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     environment:
       - DATABASE_URL=mysql://restaurant_user:restaurant_password@mysql:3306/restaurant_db
       - NEXTAUTH_SECRET=your-deployment-secret-key-change-me
       - NEXTAUTH_URL=http://localhost
       - NODE_ENV=production
       - NEXT_PUBLIC_SKIP_ESLINT_CHECK=true
+      - DEBUG=1
     depends_on:
       - mysql
     networks:
