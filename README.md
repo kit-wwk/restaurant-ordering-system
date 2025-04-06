@@ -163,7 +163,7 @@ If you're using Red Hat Enterprise Linux 9 (RHEL 9):
 4. For backup and maintenance, if you need additional packages:
    ```bash
    # Install required tools
-   sudo dnf install -y gzip findutils awscli nc
+   sudo dnf install -y gzip findutils awscli nc netcat
    ```
 
 ### Important Security Notes
@@ -196,6 +196,22 @@ npm ci --legacy-peer-deps
 ```
 
 The deployment script automatically includes this flag when building with Docker.
+
+#### MySQL Connection Issues
+
+If you encounter MySQL connection issues with the start.sh script:
+
+```
+./start.sh: line 22: nc: command not found
+```
+
+Install the netcat package:
+
+```bash
+sudo dnf install -y nc netcat
+```
+
+The script has fallbacks for environments without netcat, but installing it is recommended.
 
 ## Database Management
 

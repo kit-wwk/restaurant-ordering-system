@@ -119,6 +119,10 @@ fi
 log "Setting script permissions..."
 chmod +x scripts/*.sh
 
+# For backup and maintenance, install required packages
+log "Installing required system tools..."
+sudo dnf install -y gzip findutils netcat awscli nc
+
 # Build and start the containers
 log "Building and starting the application..."
 log "Note: Using --legacy-peer-deps to resolve MUI dependency conflicts"
