@@ -124,7 +124,19 @@ A full-featured restaurant ordering system built with Next.js, Prisma, and MySQL
 
 If you're using Red Hat Enterprise Linux 9 (RHEL 9):
 
-1. Docker setup is different from Amazon Linux:
+1. Node.js installation:
+
+   ```bash
+   # Install Node.js 18.x LTS on RHEL 9
+   sudo dnf install -y https://rpm.nodesource.com/pub_18.x/nodistro/repo/nodesource-release-nodistro-1.noarch.rpm
+   sudo dnf install -y nodejs
+
+   # Verify installation
+   node -v
+   npm -v
+   ```
+
+2. Docker setup is different from Amazon Linux:
 
    ```bash
    # Install Docker on RHEL 9
@@ -138,17 +150,17 @@ If you're using Red Hat Enterprise Linux 9 (RHEL 9):
    sudo usermod -a -G docker $USER
    ```
 
-2. RHEL 9 typically uses the Docker Compose plugin rather than standalone docker-compose:
+3. RHEL 9 typically uses the Docker Compose plugin rather than standalone docker-compose:
 
    ```bash
    # Use this format with RHEL 9
    docker compose up -d
    ```
 
-3. For backup and maintenance, if you need additional packages:
+4. For backup and maintenance, if you need additional packages:
    ```bash
    # Install required tools
-   sudo dnf install -y gzip findutils awscli
+   sudo dnf install -y gzip findutils awscli nc
    ```
 
 ### Important Security Notes

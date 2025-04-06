@@ -16,6 +16,24 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
 
+# Install Node.js and npm if not installed
+if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
+    log "Node.js or npm not found. Installing Node.js 18.x LTS..."
+    
+    # Add NodeSource repository for Node.js 18.x
+    sudo dnf install -y https://rpm.nodesource.com/pub_18.x/nodistro/repo/nodesource-release-nodistro-1.noarch.rpm
+    sudo dnf install -y nodejs
+    
+    # Verify installation
+    NODE_VERSION=$(node -v)
+    NPM_VERSION=$(npm -v)
+    log "Node.js $NODE_VERSION and npm $NPM_VERSION installed successfully."
+else
+    NODE_VERSION=$(node -v)
+    NPM_VERSION=$(npm -v)
+    log "Node.js $NODE_VERSION and npm $NPM_VERSION are already installed."
+fi
+
 # Install Docker if not installed
 if ! command -v docker &> /dev/null; then
     log "Docker not found. Installing Docker..."
