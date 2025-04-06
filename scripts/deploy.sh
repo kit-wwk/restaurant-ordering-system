@@ -71,7 +71,7 @@ if [ -d "$REPO_DIR" ]; then
     git pull
 else
     log "Cloning repository..."
-    git clone https://github.com/your-repo/pm-restaurant.git "$REPO_DIR"
+    git clone https://github.com/kit-wwk/restaurant-ordering-system.git "$REPO_DIR"
     cd "$REPO_DIR"
 fi
 

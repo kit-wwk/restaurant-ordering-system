@@ -25,7 +25,7 @@ A full-featured restaurant ordering system built with Next.js, Prisma, and MySQL
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/your-repo/pm-restaurant.git
+   git clone https://github.com/kit-wwk/restaurant-ordering-system.git
    cd pm-restaurant
    ```
 
@@ -91,7 +91,7 @@ A full-featured restaurant ordering system built with Next.js, Prisma, and MySQL
    a. Clone the repository:
 
    ```bash
-   git clone https://github.com/your-repo/pm-restaurant.git
+   git clone https://github.com/kit-wwk/restaurant-ordering-system.git
    cd pm-restaurant
    ```
 
