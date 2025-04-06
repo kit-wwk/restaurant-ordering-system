@@ -59,9 +59,9 @@ RUN chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy start.sh script directly to the root directory
-COPY scripts/start.sh ./start.sh
-RUN chmod +x ./start.sh
+# Copy and prepare start.sh script
+COPY scripts/start.sh /app/start.sh
+RUN chmod +x /app/start.sh
 
 USER nextjs
 
@@ -70,5 +70,5 @@ EXPOSE 3000
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
-# Use the startup script instead of directly starting Node
-CMD ["./start.sh"] 
+# Use the startup script with full path
+CMD ["/app/start.sh"] 

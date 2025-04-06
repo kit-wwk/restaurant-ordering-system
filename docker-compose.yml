@@ -10,6 +10,8 @@ services:
     restart: always
     ports:
       - "80:3000"
+    volumes:
+      - ./scripts:/app/scripts
     environment:
       - DATABASE_URL=mysql://restaurant_user:restaurant_password@mysql:3306/restaurant_db
       - NEXTAUTH_SECRET=your-deployment-secret-key-change-me
