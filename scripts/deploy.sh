@@ -21,8 +21,8 @@ if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
     log "Node.js or npm not found. Installing Node.js 20.x LTS..."
     
     # Add NodeSource repository for Node.js 20.x
-    sudo dnf install --allowerasing -y https://rpm.nodesource.com/pub_20.x/nodistro/repo/nodesource-release-nodistro-1.noarch.rpm
-    sudo dnf install --allowerasing -y nodejs
+    sudo dnf install --allowerasing --nogpgcheck -y https://rpm.nodesource.com/pub_20.x/nodistro/repo/nodesource-release-nodistro-1.noarch.rpm
+    sudo dnf install --allowerasing --nogpgcheck -y nodejs
     
     # Verify installation
     NODE_VERSION=$(node -v)
