@@ -66,7 +66,7 @@ A full-featured restaurant ordering system built with Next.js, Prisma, and MySQL
 
 ### Prerequisites
 
-- An AWS EC2 instance (Amazon Linux 2 recommended)
+- An AWS EC2 instance running Amazon Linux 2 or RHEL 9
 - Docker and Docker Compose installed on the EC2 instance
 - Git installed on the EC2 instance
 
@@ -75,7 +75,9 @@ A full-featured restaurant ordering system built with Next.js, Prisma, and MySQL
 1. Connect to your EC2 instance:
 
    ```bash
-   ssh -i your-key.pem ec2-user@your-ec2-public-dns
+   ssh -i your-key.pem ec2-user@your-ec2-public-dns   # For Amazon Linux 2
+   # OR
+   ssh -i your-key.pem rhel-user@your-ec2-public-dns  # For RHEL 9
    ```
 
 2. One-step deployment script:
@@ -109,10 +111,45 @@ A full-featured restaurant ordering system built with Next.js, Prisma, and MySQL
    d. Start the application with Docker Compose:
 
    ```bash
+   # For Amazon Linux 2 or systems with standalone docker-compose
    docker-compose up -d
+
+   # For RHEL 9 or systems with the Docker Compose plugin
+   docker compose up -d
    ```
 
 3. Access the application at your EC2 instance's public DNS.
+
+### RHEL 9 Specific Notes
+
+If you're using Red Hat Enterprise Linux 9 (RHEL 9):
+
+1. Docker setup is different from Amazon Linux:
+
+   ```bash
+   # Install Docker on RHEL 9
+   sudo dnf install -y dnf-plugins-core
+   sudo dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+   sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+   # Start and enable Docker
+   sudo systemctl start docker
+   sudo systemctl enable docker
+   sudo usermod -a -G docker $USER
+   ```
+
+2. RHEL 9 typically uses the Docker Compose plugin rather than standalone docker-compose:
+
+   ```bash
+   # Use this format with RHEL 9
+   docker compose up -d
+   ```
+
+3. For backup and maintenance, if you need additional packages:
+   ```bash
+   # Install required tools
+   sudo dnf install -y gzip findutils awscli
+   ```
 
 ### Important Security Notes
 
@@ -120,6 +157,7 @@ A full-featured restaurant ordering system built with Next.js, Prisma, and MySQL
 - Configure HTTPS using AWS Certificate Manager or Let's Encrypt
 - Set up a proper database backup strategy
 - Review network security groups to restrict access as needed
+- For RHEL 9, consider using SELinux for enhanced security
 
 ## Database Management
 

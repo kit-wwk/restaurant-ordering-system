@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# Restaurant Ordering System Deployment Script
+# Restaurant Ordering System Deployment Script for RHEL 9
 # Run this script on your EC2 instance to deploy the application
 
 echo "🚀 Starting Restaurant Ordering System deployment..."
@@ -9,25 +9,25 @@ echo "🚀 Starting Restaurant Ordering System deployment..."
 # Check if Docker is installed
 if ! command -v docker &> /dev/null; then
     echo "🔧 Docker not found, installing..."
-    sudo amazon-linux-extras install docker -y
-    sudo service docker start
-    sudo systemctl enable docker
-    sudo usermod -a -G docker ec2-user
+    # RHEL 9 uses dnf and podman by default, but we'll install docker-ce
+    sudo dnf install -y dnf-plugins-core
+    sudo dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+    sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
     
-    # Install Docker Compose
-    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    sudo chmod +x /usr/local/bin/docker-compose
+    # Start and enable Docker service
+    sudo systemctl start docker
+    sudo systemctl enable docker
+    sudo usermod -a -G docker $USER
     
     echo "🔄 Please log out and log back in to apply Docker group changes"
     echo "   Then run this script again."
     exit 0
 fi
 
-# Check if Docker Compose is installed
-if ! command -v docker-compose &> /dev/null; then
-    echo "🔧 Docker Compose not found, installing..."
-    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    sudo chmod +x /usr/local/bin/docker-compose
+# Check if Docker Compose is installed - RHEL 9 typically uses the docker compose plugin
+if ! command -v docker-compose &> /dev/null && ! command -v docker compose &> /dev/null; then
+    echo "🔧 Docker Compose not found, installing docker-compose-plugin..."
+    sudo dnf install -y docker-compose-plugin
 fi
 
 # Clone or update the repository
@@ -45,6 +45,7 @@ fi
 echo "🔐 Setting up environment variables..."
 if [ ! -f ".env.production" ]; then
     echo "⚠️ .env.production file not found, creating..."
+    # RHEL 9 EC2 uses the same metadata service
     cat > .env.production << EOF
 # Production environment variables
 DATABASE_URL="mysql://restaurant_user:restaurant_password@mysql:3306/restaurant_db"
@@ -60,12 +61,23 @@ chmod +x scripts/*.sh
 
 # Build and start the containers
 echo "🏗️ Building and starting containers..."
-docker-compose -f docker-compose.yml build
-docker-compose -f docker-compose.yml up -d
+# Check which docker-compose command to use
+if command -v docker-compose &> /dev/null; then
+    docker-compose -f docker-compose.yml build
+    docker-compose -f docker-compose.yml up -d
+else
+    # Use the docker compose plugin format
+    docker compose -f docker-compose.yml build
+    docker compose -f docker-compose.yml up -d
+fi
 
 # Show container status
 echo "📊 Container status:"
-docker-compose -f docker-compose.yml ps
+if command -v docker-compose &> /dev/null; then
+    docker-compose -f docker-compose.yml ps
+else
+    docker compose -f docker-compose.yml ps
+fi
 
 echo "🌐 Application should now be running at:"
 echo "http://$(curl -s http://169.254.169.254/latest/meta-data/public-hostname)"

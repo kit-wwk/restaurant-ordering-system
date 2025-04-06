@@ -1,13 +1,13 @@
 #!/bin/bash
 set -e
 
-# Restaurant Ordering System - Database Backup Script
+# Restaurant Ordering System - Database Backup Script for RHEL 9
 # This script creates a backup of the MySQL database and stores it locally
 # Schedule this with cron to run regularly
 
 # Configuration
 TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
-BACKUP_DIR="/home/ec2-user/backups"
+BACKUP_DIR="/home/$(whoami)/backups"
 CONTAINER_NAME="restaurant_mysql"
 DB_NAME="restaurant_db"
 DB_USER="restaurant_user"
@@ -21,8 +21,16 @@ echo "🔄 Starting database backup at $(date)"
 
 # Create the backup
 echo "📦 Creating backup..."
-docker exec $CONTAINER_NAME /usr/bin/mysqldump --single-transaction --quick --lock-tables=false \
-  -u $DB_USER -p$DB_PASSWORD $DB_NAME | gzip > $BACKUP_DIR/backup-$TIMESTAMP.sql.gz
+# Check which docker command style to use
+if command -v docker-compose &> /dev/null; then
+  # Using standalone docker-compose
+  docker exec $CONTAINER_NAME /usr/bin/mysqldump --single-transaction --quick --lock-tables=false \
+    -u $DB_USER -p$DB_PASSWORD $DB_NAME | gzip > $BACKUP_DIR/backup-$TIMESTAMP.sql.gz
+else
+  # Using docker compose plugin (RHEL 9 default)
+  docker exec $CONTAINER_NAME /usr/bin/mysqldump --single-transaction --quick --lock-tables=false \
+    -u $DB_USER -p$DB_PASSWORD $DB_NAME | gzip > $BACKUP_DIR/backup-$TIMESTAMP.sql.gz
+fi
 
 # Check if backup was successful
 if [ $? -eq 0 ]; then
@@ -42,6 +50,7 @@ fi
 
 # Optional: Upload to S3 or other cloud storage
 # Uncomment and configure the following line to enable S3 upload
+# Install AWS CLI if needed: sudo dnf install -y awscli
 # aws s3 cp $BACKUP_DIR/backup-$TIMESTAMP.sql.gz s3://your-bucket-name/database-backups/
 
 echo "🏁 Backup process completed at $(date)" 
