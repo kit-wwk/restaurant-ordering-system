@@ -146,7 +146,13 @@ If you're using Red Hat Enterprise Linux 9 (RHEL 9):
    sudo dnf install -y git
 
    # Install additional required tools
-   sudo dnf install -y gzip findutils awscli nc netcat
+   sudo dnf install -y gzip findutils
+
+   # For MySQL connectivity checks (netcat)
+   sudo dnf install -y nmap-ncat
+
+   # AWS CLI
+   sudo dnf install -y awscli
    ```
 
 3. Docker setup is different from Amazon Linux:
@@ -171,6 +177,7 @@ If you're using Red Hat Enterprise Linux 9 (RHEL 9):
    ```
 
 5. For backup and maintenance, if you need additional packages:
+
    ```
 
    ```
@@ -214,10 +221,13 @@ If you encounter MySQL connection issues with the start.sh script:
 ./start.sh: line 22: nc: command not found
 ```
 
-Install the netcat package:
+Install the netcat package (package name varies by distribution):
 
 ```bash
-sudo dnf install -y nc netcat
+# On RHEL 9, try one of these commands:
+sudo dnf install -y nmap-ncat   # This is the most common package on RHEL 9
+# OR
+sudo dnf install -y nc
 ```
 
 The script has fallbacks for environments without netcat, but installing it is recommended.

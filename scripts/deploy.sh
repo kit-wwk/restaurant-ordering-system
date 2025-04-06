@@ -134,7 +134,18 @@ chmod +x scripts/*.sh
 
 # For backup and maintenance, install required packages
 log "Installing required system tools..."
-sudo dnf install -y gzip findutils netcat awscli nc
+# Try alternative package names for netcat on RHEL 9
+if ! sudo dnf install -y gzip findutils nc &> /dev/null; then
+    log "Note: 'nc' package not found, trying alternative packages..."
+    # Try nmap-ncat which is commonly available on RHEL
+    sudo dnf install -y nmap-ncat &> /dev/null || log "Warning: Could not install netcat. MySQL connectivity check will use fallback methods."
+fi
+
+# Install AWS CLI if needed
+if ! command -v aws &> /dev/null; then
+    log "Installing AWS CLI..."
+    sudo dnf install -y awscli || log "Warning: Could not install AWS CLI"
+fi
 
 # Build and start the containers
 log "Building and starting the application..."
