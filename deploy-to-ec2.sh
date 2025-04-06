@@ -19,25 +19,69 @@ cat > nginx.conf << 'EOL'
 server {
     listen 80;
     server_name _;
+    
+    # Set client max body size to 10M
+    client_max_body_size 10M;
+
+    # Enhanced logging for debugging redirects
+    error_log /var/log/nginx/restaurant_error.log debug;
+    access_log /var/log/nginx/restaurant_access.log;
 
     # Node.js app
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://app:3000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
+        # Add header to help identify proxy source in debugging
+        proxy_set_header X-NGINX-PROXY true;
     }
 
-    # Special handling for API routes
+    # Special handling for API routes - more direct approach
     location /api/ {
-        proxy_pass http://localhost:3000;
+        # Important: Direct traffic to the app container, not localhost
+        proxy_pass http://app:3000/api/;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        # Add header to help identify proxy source in debugging
+        proxy_set_header X-NGINX-PROXY true;
+        # Disable caching for API requests
+        proxy_no_cache 1;
+        proxy_cache_bypass 1;
+        # Increase timeout for API calls
+        proxy_connect_timeout 300;
+        proxy_send_timeout 300;
+        proxy_read_timeout 300;
+        send_timeout 300;
+        # Add CORS headers
+        add_header 'Access-Control-Allow-Origin' '*' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
+    }
+
+    # Special handling for admin API routes
+    location /api/admin/ {
+        # Important: Direct traffic to the app container, not localhost
+        proxy_pass http://app:3000/api/admin/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # Add header to help identify proxy source in debugging
+        proxy_set_header X-NGINX-PROXY true;
+        proxy_set_header X-Original-URI $request_uri;
+        # Disable caching for admin API requests
+        proxy_no_cache 1;
+        proxy_cache_bypass 1;
         # Increase timeout for API calls
         proxy_connect_timeout 300;
         proxy_send_timeout 300;

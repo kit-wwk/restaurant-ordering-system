@@ -2,8 +2,26 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 // GET /api/admin/menu - Get all menu items
-export async function GET() {
+export async function GET(request: Request) {
+  // Check for redirect loops
+  if (request.url.includes("_redirect_count")) {
+    const url = new URL(request.url);
+    const count = parseInt(url.searchParams.get("_redirect_count") || "0", 10);
+
+    if (count > 3) {
+      console.error(
+        `Detected redirect loop on /api/admin/menu - count: ${count}`
+      );
+      return NextResponse.json(
+        { error: "Redirect loop detected. Please check server logs." },
+        { status: 508 } // Loop Detected status code
+      );
+    }
+  }
+
   try {
+    console.log(`Handling GET request to ${request.url}`);
+
     const categories = await prisma.category.findMany({
       include: {
         items: true,

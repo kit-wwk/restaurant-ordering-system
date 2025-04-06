@@ -59,7 +59,22 @@ export default function MenuManagement() {
 
   const fetchMenu = async () => {
     try {
-      const res = await fetch("/api/admin/menu");
+      const timestamp = new Date().getTime();
+      const res = await fetch(`/api/admin/menu?t=${timestamp}`, {
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      });
+
+      if (res.status === 508) {
+        console.error("Redirect loop detected when fetching menu");
+        setLoading(false);
+        return;
+      }
+
       const data = await res.json();
       setCategories(data);
       setLoading(false);
