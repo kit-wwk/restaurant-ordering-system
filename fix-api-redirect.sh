@@ -1,21 +1,27 @@
 #!/bin/bash
-# EC2 Deployment Script with API route handling
-# Usage: bash deploy-to-ec2.sh [server-ip]
+# API Redirect Fix Script for EC2
+# Usage: bash fix-api-redirect.sh [server-ip] [key-file]
 
 if [ -z "$1" ]; then
-  echo "Usage: bash deploy-to-ec2.sh [server-ip]"
+  echo "Usage: bash fix-api-redirect.sh [server-ip] [key-file]"
+  echo "Example: bash fix-api-redirect.sh 13.230.196.201 ~/.ssh/my-ec2-key.pem"
   exit 1
 fi
 
 SERVER_IP=$1
+KEY_FILE=$2
 
-# Build the app locally
-echo "Building application..."
-docker compose build app
+# Set SSH options
+SSH_OPTS=""
+if [ ! -z "$KEY_FILE" ]; then
+  SSH_OPTS="-i $KEY_FILE"
+fi
 
-# Create the nginx configuration with special API handling
-echo "Creating nginx configuration for API routes..."
-cat > nginx.conf << 'EOL'
+echo "Fixing API redirects for server: $SERVER_IP"
+
+# Create the nginx configuration that fixes trailing slash redirects
+echo "Creating NGINX configuration..."
+cat > nginx-fix.conf << 'EOL'
 server {
     listen 80;
     server_name _;
@@ -99,78 +105,9 @@ server {
 }
 EOL
 
-# Create a docker-compose configuration for EC2
-echo "Creating docker-compose configuration for EC2..."
-cat > docker-compose.ec2.yml << 'EOL'
-version: "3.8"
-services:
-  app:
-    container_name: restaurant_app
-    image: pm-restaurant-app:latest
-    restart: always
-    ports:
-      - "3000:3000"
-      - "9229:9229"
-    environment:
-      - DATABASE_URL=mysql://restaurant_user:restaurant_password@mysql:3306/restaurant_db
-      - NEXTAUTH_SECRET=your-ec2-deployment-secret-key-change-me
-      - NEXTAUTH_URL=http://${SERVER_IP}
-      - NODE_ENV=production
-      - NEXT_PUBLIC_SKIP_ESLINT_CHECK=true
-      - DEBUG=1
-      - NEXT_PUBLIC_API_URL=http://${SERVER_IP}/api
-      - NEXT_PUBLIC_VERCEL_URL=${SERVER_IP}
-      - HOSTNAME=0.0.0.0
-      - PORT=3000
-    depends_on:
-      - mysql
-    networks:
-      - restaurant_network
-
-  mysql:
-    image: mysql:8.0
-    container_name: restaurant_mysql
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: restaurant_db
-      MYSQL_USER: restaurant_user
-      MYSQL_PASSWORD: restaurant_password
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    networks:
-      - restaurant_network
-    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
-
-  nginx:
-    image: nginx:alpine
-    container_name: restaurant_nginx
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
-    depends_on:
-      - app
-    networks:
-      - restaurant_network
-
-networks:
-  restaurant_network:
-    driver: bridge
-
-volumes:
-  mysql_data:
-EOL
-
-# Replace server IP in the docker-compose file
-sed -i.bak "s/\${SERVER_IP}/$SERVER_IP/g" docker-compose.ec2.yml
-
-# Create or update the next.config.js file to properly handle trailing slashes
-echo "Creating Next.js configuration for API handling..."
-cat > next.config.js << 'EOL'
+# Create next.config.js to properly handle trailing slashes
+echo "Creating Next.js config to prevent redirect issues..."
+cat > next-fix.config.js << 'EOL'
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
@@ -203,45 +140,31 @@ const nextConfig = {
 module.exports = nextConfig;
 EOL
 
-# Create a deployment package
-echo "Creating deployment package..."
-tar -czf deployment.tar.gz \
-  docker-compose.ec2.yml \
-  scripts \
-  nginx.conf \
-  next.config.js \
-  .env.production
+# Copy the files to the EC2 server
+echo "Copying fix files to EC2 server..."
+scp $SSH_OPTS -o StrictHostKeyChecking=no nginx-fix.conf next-fix.config.js ec2-user@$SERVER_IP:/home/ec2-user/
 
-# Copy files to EC2 (add your key file path if needed)
-echo "Copying files to EC2 server at $SERVER_IP..."
-scp -o StrictHostKeyChecking=no deployment.tar.gz ec2-user@$SERVER_IP:/home/ec2-user/
-
-# Execute deployment on EC2
-echo "Executing deployment on EC2..."
-ssh -o StrictHostKeyChecking=no ec2-user@$SERVER_IP << 'ENDSSH'
+# Apply the fix on the EC2 server
+echo "Applying fix on EC2 server..."
+ssh $SSH_OPTS -o StrictHostKeyChecking=no ec2-user@$SERVER_IP << EOF
 cd /home/ec2-user
-tar -xzf deployment.tar.gz
-mv docker-compose.ec2.yml docker-compose.yml
 
-# Make sure we have the scripts directory
-mkdir -p scripts
+# Backup the old config files
+sudo mkdir -p backups
+sudo mv nginx.conf backups/nginx.conf.bak || true
+sudo mv next.config.js backups/next.config.js.bak || true
 
-# Ensure everything is readable
-chmod -R +r .
+# Apply the new configuration
+sudo mv nginx-fix.conf nginx.conf
+sudo mv next-fix.config.js next.config.js
 
-# Pull and rebuild
-sudo docker compose pull || true
-sudo docker compose down || true
-sudo docker compose up -d
+# Restart the containers to apply the changes
+sudo docker compose restart nginx
 
-# Clean up
-rm deployment.tar.gz
-ENDSSH
+echo "Fix applied. API redirects should now work correctly."
+echo "If there are still issues, you might need to rebuild the app container:"
+echo "sudo docker compose down && sudo docker compose up -d"
+EOF
 
-echo "Deployment completed to $SERVER_IP"
-echo "You can access the application at http://$SERVER_IP" 
-
-echo "=== IMPORTANT NEXT STEPS ==="
-echo "1. SSH into your server and run: 'sudo docker logs restaurant_app' to check for errors"
-echo "2. Test API endpoints with: curl -v http://$SERVER_IP/api/health"
-echo "3. If API issues persist, check NGINX logs: 'sudo docker logs restaurant_nginx'" 
+echo "API redirect fix has been deployed to $SERVER_IP"
+echo "To test, try: curl -v http://$SERVER_IP/api/health" 
