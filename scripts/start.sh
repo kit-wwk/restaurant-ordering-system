@@ -200,6 +200,20 @@ if [ "$DEBUG" -eq 1 ]; then
     ls -la >> "$LOG_FILE" || true
 fi
 
+# Enable API debugging
+export NEXT_PUBLIC_DEBUG_API=true 
+export NEXT_DEBUG=true
+export NODE_OPTIONS="--inspect=0.0.0.0:9229"
+
+# Log available API routes for debugging
+log "Available API routes:"
+find ./pages/api -type f | sort >> "$LOG_FILE" || true
+if [ "$DEBUG" -eq 1 ]; then
+    find ./pages/api -type f | sort
+    log "Node.js version: $(node -v)"
+    log "NPM version: $(npm -v)"
+fi
+
 # Start the server
 log "Executing: node server.js"
 exec node server.js 
