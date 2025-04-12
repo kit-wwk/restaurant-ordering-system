@@ -126,8 +126,7 @@ export async function PATCH(request: Request) {
 
     // Validate status value
     const validStatuses = ["CONFIRMED", "PENDING", "CANCELLED"];
-    const normalizedStatus = status.toUpperCase();
-    if (!validStatuses.includes(normalizedStatus)) {
+    if (!validStatuses.includes(status)) {
       return NextResponse.json(
         { error: "Invalid status value" },
         { status: 400 }
@@ -137,7 +136,7 @@ export async function PATCH(request: Request) {
     const booking = await prisma.booking.update({
       where: { id },
       data: {
-        status: normalizedStatus,
+        status,
       },
       include: {
         user: {
@@ -149,7 +148,20 @@ export async function PATCH(request: Request) {
       },
     });
 
-    return NextResponse.json(booking);
+    // Transform the response to match the expected format
+    const formattedBooking = {
+      id: booking.id,
+      customerName: booking.user ? booking.user.name : booking.guestName,
+      phoneNumber: booking.user ? booking.user.phone : booking.guestPhone || "",
+      date: booking.date.toISOString().split("T")[0],
+      time: booking.time.toISOString().split("T")[1].substring(0, 5),
+      numberOfPeople: booking.guests,
+      notes: booking.notes || "",
+      status: booking.status,
+      isGuest: !booking.user,
+    };
+
+    return NextResponse.json(formattedBooking);
   } catch (error) {
     console.error("Error updating booking:", error);
     return NextResponse.json(
