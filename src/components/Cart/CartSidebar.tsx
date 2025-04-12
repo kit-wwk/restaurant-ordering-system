@@ -115,7 +115,8 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
 
       enqueueSnackbar("Order submitted successfully!", { variant: "success" });
       dispatch({ type: "CLEAR_CART" });
-      router.push("/orders");
+      onClose();
+      router.push(`/orders/${responseData.id}`);
     } catch (error) {
       console.error("Error submitting order:", error);
       enqueueSnackbar(
