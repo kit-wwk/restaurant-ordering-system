@@ -1,0 +1,14 @@
+{
+  "name": "db-clone",
+  "version": "1.0.0",
+  "description": "Database cloning utility for restaurant app",
+  "type": "module",
+  "main": "clone-database.js",
+  "scripts": {
+    "start": "node clone-database.js",
+    "test": "node test-endpoints.js"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  }
+}

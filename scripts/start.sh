@@ -64,7 +64,141 @@ debug_log() {
     fi
 }
 
-# Validate script environment
+# Function to check if database is empty
+check_db_empty() {
+    log "Checking if database tables are empty..."
+    
+    # Use the Prisma query engine to check if any restaurants exist
+    RESTAURANT_COUNT=$(npx prisma db execute --stdin <<SQL
+    SELECT COUNT(*) as count FROM Restaurant;
+SQL
+    )
+    
+    # Extract count from result (this is a simple approach, might need adjusting)
+    COUNT=$(echo "$RESTAURANT_COUNT" | grep -o '[0-9]\+' | head -1)
+    debug_log "Restaurant count: $COUNT"
+    
+    if [ -z "$COUNT" ] || [ "$COUNT" -eq "0" ]; then
+        log "Database appears to be empty, seeding required"
+        return 0  # Empty database
+    else
+        log "Database already has data (found $COUNT restaurants)"
+        return 1  # Non-empty database
+    fi
+}
+
+# Function to seed the database
+seed_database() {
+    log "Seeding the database..."
+    
+    # First try using ts-node and the prisma seed command
+    if command -v ts-node &> /dev/null; then
+        log "Using ts-node for database seeding"
+        
+        # Check if bcryptjs is available
+        if ! command -v node -e "require('bcryptjs')" &> /dev/null; then
+            log "Installing bcryptjs locally for seeding"
+            npm install --no-save bcryptjs @types/bcryptjs
+        fi
+        
+        npx prisma db seed
+        SEED_RESULT=$?
+        
+        if [ $SEED_RESULT -eq 0 ]; then
+            return 0
+        else
+            log "ts-node seeding failed with code $SEED_RESULT, falling back to direct SQL seeding"
+        fi
+    else
+        log "ts-node not available, trying alternative seeding method"
+    fi
+    
+    # Try direct SQL seeding as fallback
+    log "Seeding database with direct SQL commands"
+    npx prisma db execute --stdin <<SQL
+    -- Create database tables if they don't exist
+    CREATE TABLE IF NOT EXISTS Restaurant (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        name VARCHAR(255) NOT NULL,
+        address VARCHAR(255),
+        phone VARCHAR(50),
+        email VARCHAR(255),
+        description TEXT
+    );
+    
+    CREATE TABLE IF NOT EXISTS Category (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        name VARCHAR(255) NOT NULL,
+        restaurantId INT,
+        FOREIGN KEY (restaurantId) REFERENCES Restaurant(id) ON DELETE CASCADE
+    );
+    
+    CREATE TABLE IF NOT EXISTS MenuItem (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        price DECIMAL(10, 2) NOT NULL,
+        imageUrl VARCHAR(255),
+        available BOOLEAN DEFAULT true,
+        categoryId INT,
+        FOREIGN KEY (categoryId) REFERENCES Category(id) ON DELETE CASCADE
+    );
+    
+    CREATE TABLE IF NOT EXISTS User (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(255),
+        password VARCHAR(255) NOT NULL,
+        role ENUM('USER', 'ADMIN') DEFAULT 'USER'
+    );
+    
+    -- Insert a default restaurant if none exists
+    INSERT INTO Restaurant (id, name, address, phone, email, description) 
+    SELECT 1, 'Demo Restaurant', '123 Demo Street', '555-1234', 'demo@restaurant.com', 'A demo restaurant'
+    WHERE NOT EXISTS (SELECT * FROM Restaurant LIMIT 1);
+    
+    -- Insert default categories if none exist
+    INSERT INTO Category (id, name, restaurantId) 
+    SELECT 1, 'Appetizers', 1
+    WHERE NOT EXISTS (SELECT * FROM Category WHERE name = 'Appetizers');
+    
+    INSERT INTO Category (id, name, restaurantId) 
+    SELECT 2, 'Main Courses', 1
+    WHERE NOT EXISTS (SELECT * FROM Category WHERE name = 'Main Courses');
+    
+    INSERT INTO Category (id, name, restaurantId) 
+    SELECT 3, 'Desserts', 1
+    WHERE NOT EXISTS (SELECT * FROM Category WHERE name = 'Desserts');
+    
+    -- Insert sample menu items if none exist
+    INSERT INTO MenuItem (name, description, price, imageUrl, available, categoryId) 
+    SELECT 'Garlic Bread', 'Toasted bread with garlic butter', 5.99, '/images/garlic-bread.jpg', true, 1
+    WHERE NOT EXISTS (SELECT * FROM MenuItem WHERE name = 'Garlic Bread');
+    
+    INSERT INTO MenuItem (name, description, price, imageUrl, available, categoryId) 
+    SELECT 'Chicken Alfredo', 'Chicken with creamy alfredo sauce', 14.99, '/images/chicken-alfredo.jpg', true, 2
+    WHERE NOT EXISTS (SELECT * FROM MenuItem WHERE name = 'Chicken Alfredo');
+    
+    INSERT INTO MenuItem (name, description, price, imageUrl, available, categoryId) 
+    SELECT 'Chocolate Cake', 'Rich chocolate cake with frosting', 6.99, '/images/chocolate-cake.jpg', true, 3
+    WHERE NOT EXISTS (SELECT * FROM MenuItem WHERE name = 'Chocolate Cake');
+    
+    -- Insert an admin user if none exists (password is 'admin123' hashed)
+    INSERT INTO User (email, name, password, role)
+    SELECT 'admin@restaurant.com', 'Admin User', '$2a$10$5iD2DmpGxLJ73Hcn0QVhYO6v7/8hNPVqcIFiXsOkj2CDl5/Y65EFq', 'ADMIN'
+    WHERE NOT EXISTS (SELECT * FROM User WHERE email = 'admin@restaurant.com');
+SQL
+    SEEDING_RESULT=$?
+    
+    if [ $SEEDING_RESULT -eq 0 ]; then
+        log "✅ Direct SQL seeding successful"
+    else
+        error_log "Direct SQL seeding failed with code $SEEDING_RESULT"
+    fi
+    return $SEEDING_RESULT
+}
+
+# Validate the environment
 validate_environment() {
     log "Validating environment..."
     
@@ -161,29 +295,6 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Check if ts-node is available for seeding
-if ! command -v ts-node &> /dev/null; then
-    log "Warning: ts-node command not found, skipping global installation (permission issue)"
-    # Skip global installation as the nextjs user doesn't have permission
-    # npm install -g ts-node typescript @types/node
-    log "Will attempt to continue without ts-node"
-fi
-
-# Check if database needs seeding
-log "Checking if database needs seeding..."
-
-# Simple approach - try seeding but continue on failure 
-log "Attempting to seed the database..."
-# Use "|| true" to ensure the command doesn't fail the script
-npx prisma db seed || true
-SEED_RESULT=$?
-
-if [ $SEED_RESULT -eq 0 ]; then
-    log "✅ Database seeded successfully."
-else
-    log "Database may already have data or seeding failed with code $SEED_RESULT - continuing anyway."
-fi
-
 # Generate Prisma client if it doesn't exist
 if [ ! -d "node_modules/.prisma/client" ]; then
     log "Generating Prisma client..."
@@ -191,6 +302,21 @@ if [ ! -d "node_modules/.prisma/client" ]; then
     if [ $? -ne 0 ]; then
         error_log "Failed to generate Prisma client but continuing..."
     fi
+fi
+
+# Check if database needs seeding and seed if empty
+if check_db_empty; then
+    log "Database is empty, proceeding with seeding..."
+    seed_database
+    SEED_RESULT=$?
+    
+    if [ $SEED_RESULT -eq 0 ]; then
+        log "✅ Database seeded successfully."
+    else
+        log "⚠️ Database seeding failed with code $SEED_RESULT - continuing anyway."
+    fi
+else
+    log "Database already contains data, skipping seeding."
 fi
 
 # Start the application

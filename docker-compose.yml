@@ -9,7 +9,7 @@ services:
         - NPM_FLAGS=--legacy-peer-deps
     restart: always
     ports:
-      - "3002:3000"
+      - "8090:3000"
       - "9229:9229"
     volumes:
       - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -24,6 +24,7 @@ services:
       - NEXT_PUBLIC_VERCEL_URL=localhost
       - HOSTNAME=0.0.0.0
       - PORT=3000
+      - DATABASE_NEED_SEED=true
     depends_on:
       - mysql
     networks:
@@ -51,7 +52,7 @@ services:
     image: nginx:alpine
     container_name: restaurant_nginx
     ports:
-      - "8080:80"
+      - "8081:80"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
     depends_on:

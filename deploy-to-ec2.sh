@@ -122,6 +122,7 @@ services:
       - NEXT_PUBLIC_VERCEL_URL=${SERVER_IP}
       - HOSTNAME=0.0.0.0
       - PORT=3000
+      - DATABASE_NEED_SEED=true
     depends_on:
       - mysql
     networks:
@@ -203,6 +204,65 @@ const nextConfig = {
 module.exports = nextConfig;
 EOL
 
+# Create database check and seeding script
+echo "Creating database check script..."
+cat > scripts/check-and-seed-db.sh << 'EOL'
+#!/bin/bash
+# Database check and seeding script
+
+# Wait for the application to start
+sleep 15
+
+# Check the health endpoint to verify database connectivity
+echo "Checking API health to verify database status..."
+DB_CHECK=$(curl -s http://localhost/api/health)
+
+# Extract restaurants count from health check
+# The health API returns database.tables.restaurants
+RESTAURANT_COUNT=$(echo "$DB_CHECK" | grep -o '"restaurants":[0-9]\+' | grep -o '[0-9]\+')
+
+if [ -z "$RESTAURANT_COUNT" ] || [ "$RESTAURANT_COUNT" -eq "0" ]; then
+    echo "Database appears to be empty. Running seeding process..."
+    
+    # Call the seed script in the app container
+    docker exec restaurant_app /bin/sh /app/seed-db.sh
+    
+    # Verify seeding was successful
+    sleep 5
+    DB_CHECK_AFTER=$(curl -s http://localhost/api/health)
+    RESTAURANT_COUNT_AFTER=$(echo "$DB_CHECK_AFTER" | grep -o '"restaurants":[0-9]\+' | grep -o '[0-9]\+')
+    
+    if [ -n "$RESTAURANT_COUNT_AFTER" ] && [ "$RESTAURANT_COUNT_AFTER" -gt "0" ]; then
+        echo "✅ Database seeding successful!"
+    else
+        echo "⚠️ Database seeding may have failed. Please check container logs and seed manually."
+        echo "To manually seed the database, run: docker exec restaurant_app /bin/sh /app/seed-db.sh"
+    fi
+else
+    echo "✅ Database already contains data ($RESTAURANT_COUNT restaurants). No seeding needed."
+fi
+EOL
+
+# Create database backup script
+echo "Creating database backup script..."
+cat > scripts/backup-db.sh << 'EOL'
+#!/bin/bash
+# Database backup script
+
+BACKUP_DIR="/home/ec2-user/db_backups"
+mkdir -p "$BACKUP_DIR"
+
+# Create backup with timestamp
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+BACKUP_FILE="$BACKUP_DIR/restaurant_db_$TIMESTAMP.sql"
+
+echo "Creating backup: $BACKUP_FILE"
+docker exec restaurant_mysql sh -c 'exec mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" restaurant_db' > "$BACKUP_FILE"
+
+echo "Backup completed: $BACKUP_FILE"
+echo "To restore: cat $BACKUP_FILE | docker exec -i restaurant_mysql mysql -uroot -p\"\$MYSQL_ROOT_PASSWORD\" restaurant_db"
+EOL
+
 # Create a deployment package
 echo "Creating deployment package..."
 tar -czf deployment.tar.gz \
@@ -226,13 +286,17 @@ mv docker-compose.ec2.yml docker-compose.yml
 # Make sure we have the scripts directory
 mkdir -p scripts
 
-# Ensure everything is readable
+# Ensure everything is readable and scripts are executable
 chmod -R +r .
+chmod +x scripts/*.sh
 
 # Pull and rebuild
 sudo docker compose pull || true
 sudo docker compose down || true
 sudo docker compose up -d
+
+# Run the database check and seeding script
+bash ./scripts/check-and-seed-db.sh
 
 # Clean up
 rm deployment.tar.gz
@@ -244,4 +308,5 @@ echo "You can access the application at http://$SERVER_IP"
 echo "=== IMPORTANT NEXT STEPS ==="
 echo "1. SSH into your server and run: 'sudo docker logs restaurant_app' to check for errors"
 echo "2. Test API endpoints with: curl -v http://$SERVER_IP/api/health"
-echo "3. If API issues persist, check NGINX logs: 'sudo docker logs restaurant_nginx'" 
+echo "3. If API issues persist, check NGINX logs: 'sudo docker logs restaurant_nginx'"
+echo "4. To backup the database: ssh ec2-user@$SERVER_IP 'bash ./scripts/backup-db.sh'" 

@@ -160,6 +160,14 @@ if [ -f docker-compose.yml ]; then
     sed -i "s|NEXT_PUBLIC_API_URL=http://localhost/api|NEXT_PUBLIC_API_URL=http://${SERVER_IP}/api|g" docker-compose.yml
     sed -i "s|NEXT_PUBLIC_VERCEL_URL=localhost|NEXT_PUBLIC_VERCEL_URL=${SERVER_IP}|g" docker-compose.yml
     sed -i "s|NEXTAUTH_URL=http://localhost|NEXTAUTH_URL=http://${SERVER_IP}|g" docker-compose.yml
+    
+    # Add DATABASE_NEED_SEED flag to ensure database is seeded
+    if ! grep -q "DATABASE_NEED_SEED" docker-compose.yml; then
+        log "Adding DATABASE_NEED_SEED environment variable to docker-compose.yml"
+        # Find the app environment section and add the new variable
+        sed -i '/environment:/a \      - DATABASE_NEED_SEED=true' docker-compose.yml
+    fi
+    
     log "docker-compose.yml updated with server IP: $SERVER_IP"
 fi
 
@@ -217,6 +225,37 @@ if ! command -v aws &> /dev/null; then
     sudo dnf install -y awscli || log "Warning: Could not install AWS CLI"
 fi
 
+# Create a database backup script
+log "Creating database backup script..."
+cat > scripts/backup-db.sh << 'EOL'
+#!/bin/bash
+# Database backup script
+
+# Get container name
+MYSQL_CONTAINER=$(docker ps | grep mysql | awk '{print $NF}')
+
+if [ -z "$MYSQL_CONTAINER" ]; then
+    echo "MySQL container not found!"
+    exit 1
+fi
+
+# Create backup directory
+BACKUP_DIR="$HOME/db_backups"
+mkdir -p "$BACKUP_DIR"
+
+# Create backup with timestamp
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+BACKUP_FILE="$BACKUP_DIR/restaurant_db_$TIMESTAMP.sql"
+
+echo "Creating backup: $BACKUP_FILE"
+docker exec $MYSQL_CONTAINER sh -c 'exec mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" restaurant_db' > "$BACKUP_FILE"
+
+echo "Backup completed: $BACKUP_FILE"
+echo "To restore: cat $BACKUP_FILE | docker exec -i $MYSQL_CONTAINER mysql -uroot -p\"\$MYSQL_ROOT_PASSWORD\" restaurant_db"
+EOL
+
+chmod +x scripts/backup-db.sh
+
 # Stop any running containers first
 log "Stopping any existing containers..."
 $DOCKER_COMPOSE -f docker-compose.yml down || true
@@ -248,17 +287,54 @@ if $DOCKER_COMPOSE ps | grep -q "Up"; then
         log "  - environment: Node environment"
         log "  - nextPublicApiUrl: API base URL"
         log "  - database.status: Database connectivity"
-        log "  - database.tables: Record counts for key tables"
+        
+        # Verify database is properly seeded
+        log "Verifying database seeding status..."
+        DB_CHECK=$(curl -s "http://$SERVER_IP/api/health")
+        
+        # Extract restaurant count from health check using correct field name
+        RESTAURANT_COUNT=$(echo "$DB_CHECK" | grep -o '"restaurants":[0-9]\+' | grep -o '[0-9]\+')
+        
+        if [ -z "$RESTAURANT_COUNT" ] || [ "$RESTAURANT_COUNT" -eq "0" ]; then
+            log "⚠️ Warning: Database appears to be empty. Running manual database seeding..."
+            
+            # Get the app container name
+            APP_CONTAINER=$(docker ps | grep restaurant_app | awk '{print $NF}')
+            
+            if [ -n "$APP_CONTAINER" ]; then
+                log "Running database seeding in container $APP_CONTAINER..."
+                docker exec $APP_CONTAINER /bin/sh /app/seed-db.sh
+                
+                # Verify seeding was successful
+                sleep 5
+                DB_CHECK_AFTER=$(curl -s "http://$SERVER_IP/api/health")
+                RESTAURANT_COUNT_AFTER=$(echo "$DB_CHECK_AFTER" | grep -o '"restaurants":[0-9]\+' | grep -o '[0-9]\+')
+                
+                if [ -n "$RESTAURANT_COUNT_AFTER" ] && [ "$RESTAURANT_COUNT_AFTER" -gt "0" ]; then
+                    log "✅ Database seeding successful!"
+                else
+                    log "⚠️ Database seeding may have failed. Please check logs and seed manually if needed."
+                    log "To manually seed the database, connect to the app container and run: /app/seed-db.sh"
+                fi
+            else
+                log "⚠️ Could not find app container. Please check container status and seed manually if needed."
+            fi
+        else
+            log "✅ Database already contains data ($RESTAURANT_COUNT restaurants). No seeding needed."
+        fi
+        
+        # Provide backup instructions
+        log "A database backup script has been created at: $REPO_DIR/scripts/backup-db.sh"
+        log "Run this script periodically to backup your database."
+        
     else
-        log "⚠️ API health check did not return expected response. Check logs for issues."
+        log "⚠️ API health check failed. Please check container logs for troubleshooting."
+        log "You can view app logs with: $DOCKER_COMPOSE logs app"
     fi
 else
-    log "Error: Containers failed to start. Check logs with: $DOCKER_COMPOSE logs"
+    log "⚠️ Deployment may have issues. Please check container logs:"
+    log "$DOCKER_COMPOSE logs"
     exit 1
 fi
 
-# Final instructions
-log "To view logs: $DOCKER_COMPOSE logs -f"
-log "To stop the application: $DOCKER_COMPOSE down"
-log "To set up HTTPS, configure a domain and SSL certificates."
-log "To check database status: curl http://$SERVER_IP/api/health | jq" 
+log "Deployment process completed. Enjoy your Restaurant Ordering System!" 
