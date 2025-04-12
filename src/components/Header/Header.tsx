@@ -285,7 +285,8 @@ export default function Header() {
           <>
             {user ? (
               <>
-                {user.role === UserRole.ADMIN && (
+                {(user.role === UserRole.ADMIN ||
+                  user.role === UserRole.STAFF) && (
                   <Button
                     color="inherit"
                     startIcon={<AdminPanelSettings />}

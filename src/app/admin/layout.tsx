@@ -24,21 +24,49 @@ import {
 
 const drawerWidth = 280;
 
+// Define menu items with their required roles
 const menuItems = [
-  { text: "Dashboard", path: "/admin", icon: <Dashboard /> },
-  { text: "Menu Management", path: "/admin/menu", icon: <Restaurant /> },
-  { text: "Order Management", path: "/admin/orders", icon: <ShoppingCart /> },
-  { text: "Booking Management", path: "/admin/bookings", icon: <Event /> },
+  {
+    text: "Dashboard",
+    path: "/admin",
+    icon: <Dashboard />,
+    roles: ["ADMIN", "STAFF"],
+  },
+  {
+    text: "Menu Management",
+    path: "/admin/menu",
+    icon: <Restaurant />,
+    roles: ["ADMIN"],
+  },
+  {
+    text: "Order Management",
+    path: "/admin/orders",
+    icon: <ShoppingCart />,
+    roles: ["ADMIN", "STAFF"],
+  },
+  {
+    text: "Booking Management",
+    path: "/admin/bookings",
+    icon: <Event />,
+    roles: ["ADMIN", "STAFF"],
+  },
   {
     text: "Promotion Management",
     path: "/admin/promotions",
     icon: <LocalOffer />,
+    roles: ["ADMIN", "STAFF"],
   },
-  { text: "User Management", path: "/admin/users", icon: <People /> },
+  {
+    text: "User Management",
+    path: "/admin/users",
+    icon: <People />,
+    roles: ["ADMIN"],
+  },
   {
     text: "Restaurant Settings",
     path: "/admin/restaurant",
     icon: <Settings />,
+    roles: ["ADMIN"],
   },
 ];
 
@@ -54,14 +82,19 @@ export default function AdminLayout({
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!isLoading && (!user || user.role !== "ADMIN")) {
+    if (!isLoading && (!user || !["ADMIN", "STAFF"].includes(user.role))) {
       router.push("/");
     }
   }, [user, isLoading, router]);
 
-  if (isLoading || !user || user.role !== "ADMIN") {
+  if (isLoading || !user || !["ADMIN", "STAFF"].includes(user.role)) {
     return null;
   }
+
+  // Filter menu items based on user role
+  const accessibleMenuItems = menuItems.filter((item) =>
+    item.roles.includes(user.role)
+  );
 
   return (
     <Box sx={{ display: "flex" }}>
@@ -79,7 +112,7 @@ export default function AdminLayout({
         }}
       >
         <List>
-          {menuItems.map((item) => (
+          {accessibleMenuItems.map((item) => (
             <ListItem key={item.path} disablePadding>
               <ListItemButton
                 selected={pathname === item.path}
