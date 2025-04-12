@@ -17,7 +17,7 @@ interface TransformedOrder {
   subtotal: number;
   discount: number;
   total: number;
-  status: string;
+  status: OrderStatus;
   createdAt: string;
   updatedAt: string;
   promotion?: {
@@ -40,19 +40,19 @@ export async function GET(request: Request) {
     const where: Prisma.OrderWhereInput = {};
 
     if (status) {
-      where.status = status.toUpperCase();
+      where.status = status.toUpperCase() as OrderStatus;
     }
 
     if (startDate) {
       where.createdAt = {
-        ...(where.createdAt as any),
+        ...(where.createdAt as Prisma.DateTimeFilter),
         gte: new Date(startDate),
       };
     }
 
     if (endDate) {
       where.createdAt = {
-        ...(where.createdAt as any),
+        ...(where.createdAt as Prisma.DateTimeFilter),
         lte: new Date(endDate),
       };
     }
@@ -79,7 +79,7 @@ export async function GET(request: Request) {
       },
     });
 
-    // Transform the data to match the frontend expectations
+    // Transform the response to match frontend expectations
     const transformedOrders: TransformedOrder[] = orders.map((order) => ({
       id: order.id,
       userId: order.userId || "",
@@ -93,7 +93,7 @@ export async function GET(request: Request) {
       subtotal: Number(order.subtotal),
       discount: Number(order.discount),
       total: Number(order.total),
-      status: order.status.toLowerCase(),
+      status: order.status,
       createdAt: order.createdAt.toISOString(),
       updatedAt: order.updatedAt.toISOString(),
       promotion: order.promotion
@@ -107,7 +107,7 @@ export async function GET(request: Request) {
     }));
 
     return NextResponse.json(transformedOrders);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error fetching orders:", error);
     return NextResponse.json(
       { error: "Failed to fetch orders" },
@@ -120,14 +120,33 @@ export async function GET(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { orderId, status } = body;
+    const { orderId, status } = body as {
+      orderId: string;
+      status: OrderStatus;
+    };
+
+    if (!orderId || !status) {
+      return NextResponse.json(
+        { error: "Order ID and status are required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate status
+    const validStatuses = Object.values(OrderStatus);
+    if (!validStatuses.includes(status)) {
+      return NextResponse.json(
+        { error: "Invalid status value" },
+        { status: 400 }
+      );
+    }
 
     const updatedOrder = await prisma.order.update({
       where: {
         id: orderId,
       },
       data: {
-        status: status.toUpperCase(),
+        status,
       },
       include: {
         user: {
@@ -161,7 +180,7 @@ export async function PUT(request: Request) {
       subtotal: Number(updatedOrder.subtotal),
       discount: Number(updatedOrder.discount),
       total: Number(updatedOrder.total),
-      status: updatedOrder.status.toLowerCase(),
+      status: updatedOrder.status,
       createdAt: updatedOrder.createdAt.toISOString(),
       updatedAt: updatedOrder.updatedAt.toISOString(),
       promotion: updatedOrder.promotion
@@ -175,7 +194,7 @@ export async function PUT(request: Request) {
     };
 
     return NextResponse.json(transformedOrder);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error updating order:", error);
     return NextResponse.json(
       { error: "Failed to update order" },
