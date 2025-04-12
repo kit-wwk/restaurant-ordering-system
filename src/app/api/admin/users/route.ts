@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import bcrypt from "bcryptjs";
 
 // GET /api/admin/users - Get all users
 export async function GET() {
@@ -44,12 +45,15 @@ export async function POST(request: Request) {
       );
     }
 
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const user = await prisma.user.create({
       data: {
         name,
         email,
         role,
-        password, // Note: In a real application, this should be hashed
+        password: hashedPassword,
       },
       select: {
         id: true,
