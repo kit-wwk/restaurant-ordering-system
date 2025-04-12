@@ -33,10 +33,11 @@ dayjs.locale("zh-hk");
 
 interface OrderItem {
   id: string;
-  menuItemId: string;
+  menuItemId?: string;
   quantity: number;
   price: number;
-  menuItem: {
+  name?: string;
+  menuItem?: {
     id: string;
     name: string;
     description?: string;
@@ -116,12 +117,12 @@ export default function OrdersManagement() {
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
     try {
-      const response = await fetch(`/api/admin/orders/${orderId}`, {
+      const response = await fetch(`/api/admin/orders`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ orderId, status: newStatus }),
       });
 
       if (!response.ok) throw new Error("Failed to update order status");
@@ -137,7 +138,30 @@ export default function OrdersManagement() {
   };
 
   const handleOrderClick = (order: Order) => {
-    setSelectedOrder(order);
+    // Ensure numeric fields are numbers
+    const processedOrder = {
+      ...order,
+      subtotal: Number(order.subtotal),
+      discount: Number(order.discount),
+      total: Number(order.total),
+      items: order.items.map((item) => ({
+        ...item,
+        price: Number(item.price),
+        // If the API response has name directly on the item, use it
+        menuItem: item.menuItem || {
+          id: item.menuItemId || "",
+          name: item.name || "Unknown Item",
+          price: Number(item.price),
+        },
+      })),
+      promotion: order.promotion
+        ? {
+            ...order.promotion,
+            minimumOrder: Number(order.promotion.minimumOrder),
+          }
+        : undefined,
+    };
+    setSelectedOrder(processedOrder);
     setIsDialogOpen(true);
   };
 
@@ -166,12 +190,12 @@ export default function OrdersManagement() {
           sx={{ minWidth: 200 }}
         >
           <MenuItem value="">All</MenuItem>
-          <MenuItem value="pending">Pending</MenuItem>
-          <MenuItem value="confirmed">Confirmed</MenuItem>
-          <MenuItem value="preparing">Preparing</MenuItem>
-          <MenuItem value="ready">Ready for Pickup</MenuItem>
-          <MenuItem value="completed">Completed</MenuItem>
-          <MenuItem value="cancelled">Cancelled</MenuItem>
+          <MenuItem value="PENDING">Pending</MenuItem>
+          <MenuItem value="CONFIRMED">Confirmed</MenuItem>
+          <MenuItem value="PREPARING">Preparing</MenuItem>
+          <MenuItem value="READY">Ready for Pickup</MenuItem>
+          <MenuItem value="COMPLETED">Completed</MenuItem>
+          <MenuItem value="CANCELLED">Cancelled</MenuItem>
         </TextField>
 
         <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -247,12 +271,12 @@ export default function OrdersManagement() {
                     }
                     size="small"
                   >
-                    <MenuItem value="pending">Pending</MenuItem>
-                    <MenuItem value="confirmed">Confirmed</MenuItem>
-                    <MenuItem value="preparing">Preparing</MenuItem>
-                    <MenuItem value="ready">Ready for Pickup</MenuItem>
-                    <MenuItem value="completed">Completed</MenuItem>
-                    <MenuItem value="cancelled">Cancelled</MenuItem>
+                    <MenuItem value="PENDING">Pending</MenuItem>
+                    <MenuItem value="CONFIRMED">Confirmed</MenuItem>
+                    <MenuItem value="PREPARING">Preparing</MenuItem>
+                    <MenuItem value="READY">Ready for Pickup</MenuItem>
+                    <MenuItem value="COMPLETED">Completed</MenuItem>
+                    <MenuItem value="CANCELLED">Cancelled</MenuItem>
                   </Select>
                 </TableCell>
                 <TableCell>{formatDate(order.createdAt)}</TableCell>
@@ -325,7 +349,9 @@ export default function OrdersManagement() {
                         <TableCell>
                           <Stack spacing={0.5}>
                             <Typography variant="body2">
-                              {item.menuItem?.name}
+                              {item.menuItem?.name ||
+                                item.name ||
+                                "Unknown Item"}
                               {selectedOrder.promotion &&
                                 item.price >=
                                   selectedOrder.promotion.minimumOrder && (
